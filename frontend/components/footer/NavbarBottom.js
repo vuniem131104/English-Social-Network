@@ -1,6 +1,6 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { StyleSheet, View, TouchableOpacity } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Text, Animated } from "react-native";
 import { Padding, Border } from "../../GlobalStyles";
 import { useTheme } from "@react-navigation/native";
 import { Ionicons, MaterialIcons, FontAwesome, Feather, AntDesign } from '@expo/vector-icons';
@@ -8,8 +8,18 @@ import { Ionicons, MaterialIcons, FontAwesome, Feather, AntDesign } from '@expo/
 const NavbarBottom = ({ state, descriptors, navigation }) => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();
+  
   return (
-    <View style={[styles.navbarbottom, { backgroundColor: colors.surfaceContainer, shadowColor: colors.primaryShadow }]}>
+    <View style={[
+      styles.navbarbottom, 
+      { 
+        backgroundColor: isDarkMode 
+          ? 'rgba(30, 30, 30, 0.95)' 
+          : 'rgba(245, 242, 236, 0.95)',
+        borderColor: isDarkMode ? '#333333' : '#e0e0e0',
+        shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : colors.primaryShadow
+      }
+    ]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -21,21 +31,27 @@ const NavbarBottom = ({ state, descriptors, navigation }) => {
 
         const isFocused = state.index === index;
 
-        let iconElement;
+        const activeIconColor = colors.primary;
+        const inactiveIconColor = isDarkMode ? 'rgba(245, 242, 236, 0.7)' : 'rgba(35, 25, 25, 0.7)';
+
+        let iconName;
+        let IconComponent = Ionicons;
         if (route.name === "Feed" || route.name === "Home") {
-          iconElement = <Ionicons name="home" size={24} color={isFocused ? colors.primary : colors.onSurface} />;
+          iconName = "home";
         }
         else if (route.name === "Search") {
-          iconElement = <Ionicons name="search" size={24} color={isFocused ? colors.primary : colors.onSurface} />;
+          iconName = "search";
         }
         else if (route.name === "CreatePost") {
-          iconElement = <AntDesign name="pluscircle" size={24} color={isFocused ? colors.primary : colors.onSurface} />;
+          IconComponent = AntDesign;
+          iconName = "pluscircle";
         }
         else if (route.name === "Favorites") {
-          iconElement = <Ionicons name="heart" size={24} color={isFocused ? colors.primary : colors.onSurface} />;
+          iconName = "heart";
         }
         else if (route.name === "Shopping") {
-          iconElement = <FontAwesome name="shopping-cart" size={24} color={isFocused ? colors.primary : colors.onSurface} />;
+          IconComponent = FontAwesome;
+          iconName = "shopping-cart";
         }
 
         const onPress = () => {
@@ -57,17 +73,61 @@ const NavbarBottom = ({ state, descriptors, navigation }) => {
           });
         };
 
+        if (route.name === "CreatePost") {
+          return (
+            <TouchableOpacity
+              key={label}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+              testID={options.tabBarTestID}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={[styles.createPostButton, { backgroundColor: activeIconColor }]}
+            >
+              <IconComponent name={iconName} size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+          );
+        }
+
         return (
-          <TouchableOpacity key={label}
+          <TouchableOpacity
+            key={label}
             accessibilityRole="button"
             accessibilityState={isFocused ? { selected: true } : {}}
             accessibilityLabel={options.tabBarAccessibilityLabel}
             testID={options.tabBarTestID}
             onPress={onPress}
             onLongPress={onLongPress}
-            style={[styles.navbarItem, isFocused && styles.navbarItemActive]}
+            style={[
+              styles.navbarItem, 
+              isFocused && [
+                styles.navbarItemActive, 
+                { 
+                  backgroundColor: isDarkMode 
+                    ? 'rgba(208, 0, 0, 0.15)' 
+                    : 'rgba(160, 0, 0, 0.1)' 
+                }
+              ]
+            ]}
           >
-            {iconElement}
+            <View style={styles.tabButtonContent}>
+              <IconComponent 
+                name={iconName} 
+                size={24} 
+                color={isFocused ? activeIconColor : inactiveIconColor} 
+              />
+              {isFocused && (
+                <Text 
+                  style={[
+                    styles.tabLabel, 
+                    { color: activeIconColor }
+                  ]}
+                >
+                  {label}
+                </Text>
+              )}
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -77,35 +137,60 @@ const NavbarBottom = ({ state, descriptors, navigation }) => {
 
 const styles = StyleSheet.create({
   navbarItem: {
-    padding: 10,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 50,
-    width: 50,
+    borderRadius: 12,
+    marginHorizontal: 4,
     height: 50,
   },
   navbarItemActive: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingVertical: 8,
+  },
+  tabButtonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 10,
+    marginTop: 2,
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   navbarbottom: {
     position: "absolute",
-    bottom: 5,
-    width: "95%",
+    bottom: 10,
+    width: "92%",
     alignSelf: "center",
     alignItems: "center",
     justifyContent: "space-between",
     flexDirection: "row",
-    borderRadius: Border.br_81xl,
+    borderRadius: 16,
     shadowOffset: {
-      width: 1,
-      height: 1,
+      width: 0,
+      height: 4,
     },
-    shadowRadius: 10,
-    elevation: 10,
-    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
+    shadowOpacity: 0.25,
     padding: 8,
+    borderWidth: 0.5,
+  },
+  createPostButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
-
 
 export default NavbarBottom;

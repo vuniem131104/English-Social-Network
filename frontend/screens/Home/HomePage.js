@@ -1,53 +1,71 @@
 import React, { useState, useEffect, useContext } from "react";
-import { 
-  Text, 
-  StyleSheet, 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  FlatList, 
+import {
+  Text,
+  StyleSheet,
+  View,
+  Image,
+  TouchableOpacity,
+  FlatList,
   ActivityIndicator,
-  StatusBar 
+  RefreshControl,
+  Share,
+  Alert
 } from "react-native";
-import { useSelector } from "react-redux";
 import { useNavigation, useTheme } from "@react-navigation/native";
+import { useSelector } from "react-redux";
 import axios from "axios";
 import { baseUrl } from "../../services/api";
 import { AuthContext } from "../../context/authContext";
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 
 const HomePage = () => {
   const navigation = useNavigation();
-  const { userInfo, userToken } = useContext(AuthContext);
-  const [posts, setPosts] = useState([]);
-  const [isLoading, setLoading] = useState(false);
-  const isDarkMode = useSelector(state => state.theme.isDarkMode);
+  const { userToken } = useContext(AuthContext);
   const { colors } = useTheme();
+  const isDarkMode = useSelector(state => state.theme.isDarkMode);
 
-  // Chỉ gọi API một lần khi component mount
+  const [activeTab, setActiveTab] = useState('forYou'); // 'forYou' or 'following'
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
   useEffect(() => {
-    const fetchSinglePost = async () => {
-      setLoading(true);
-      try {
-        const config = userToken ? {
-          headers: { Authorization: `Bearer ${userToken}` }
-        } : {};
-        
-        // Luôn lấy post số 1
-        const response = await axios.get(`${baseUrl}/newsfeed/1`, config);
-        
-        const data = Array.isArray(response.data) ? response.data : [];
-        setPosts(data);
-      } catch (error) {
-        console.error("Error fetching post:", error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchPosts();
+  }, [userToken, activeTab]);
 
-    fetchSinglePost();
-    // Mảng dependency rỗng đảm bảo useEffect chỉ chạy một lần khi mount
-  }, [userToken]);
+  const fetchPosts = async () => {
+    setIsLoading(true);
+    try {
+      const config = userToken ? {
+        headers: { Authorization: `Bearer ${userToken}` }
+      } : {};
+      
+      // Change the endpoint based on the active tab
+      const endpoint = activeTab === 'following' && userToken ? 
+        `${baseUrl}/following/posts` : 
+        `${baseUrl}/newsfeed/1000`;
+      
+      const response = await axios.get(endpoint, config);
+      
+      if (Array.isArray(response.data)) {
+        setPosts(response.data);
+      } else {
+        console.error("Expected array but got:", typeof response.data);
+        setPosts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching posts:", error.message);
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchPosts();
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -59,98 +77,250 @@ const HomePage = () => {
     const diffDay = Math.floor(diffHour / 24);
 
     if (diffDay > 0) {
-      return `${diffDay} ngày`;
+      return `${diffDay} days ago`;
     } else if (diffHour > 0) {
-      return `${diffHour} giờ`;
+      return `${diffHour} hours ago`;
     } else if (diffMin > 0) {
-      return `${diffMin} phút`;
+      return `${diffMin} minutes ago`;
     } else {
-      return 'Vừa xong';
+      return 'Just now';
+    }
+  };
+
+  const handlePostPress = (post) => {
+    navigation.navigate("PostDetail", { postId: post.id });
+  };
+
+  const handleSharePost = async (post) => {
+    try {
+      const shareContent = {
+        message: `${post.title}\n\n${post.description}\n\nCheck out this English tip on English Social App!`,
+        title: post.title,
+      };
+      
+      const result = await Share.share(shareContent);
+    } catch (error) {
+      Alert.alert("Error", "Unable to share this post. Please try again later.");
     }
   };
 
   const renderItem = ({ item }) => {
+    // Determine if the post contains English grammar tips
+    const isGrammarPost = item.steps && item.steps.length > 0;
+    
+    // Customize colors for dark mode
+    const cardBackground = isDarkMode ? 'rgba(32, 32, 36, 0.9)' : colors.surfaceContainerLow;
+    const cardBorder = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : colors.outlineVariant;
+    const separatorColor = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : 'rgba(150, 150, 150, 0.2)';
+    const tipBackground = isDarkMode ? 'rgba(40, 40, 45, 0.9)' : 'rgba(245, 245, 245, 0.1)';
+    
     return (
-      <View style={[styles.postContainer, { borderBottomColor: colors.outline }]}>
-        <View style={styles.postHeader}>
+      <TouchableOpacity 
+        style={[styles.postCard, { 
+          backgroundColor: cardBackground,
+          borderColor: cardBorder,
+        }]} 
+        onPress={() => handlePostPress(item)}
+      >
+        <View style={styles.postContent}>
           <View style={styles.userInfo}>
             <Image 
-              source={item.author.avatar ? { uri: item.author.avatar } : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.author.name) }} 
+              source={item.author?.avatar 
+                ? { uri: item.author.avatar } 
+                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.author?.name || 'User')}` }
+              } 
               style={styles.avatar} 
             />
             <View>
-              <Text style={[styles.username, { color: colors.onSurface }]}>{item.author.name}</Text>
-              <Text style={styles.timeAgo}>{formatDate(item.createdAt)}</Text>
+              <Text style={[styles.username, { color: colors.onSurface }]}>
+                {item.author?.username || item.author?.name || 'Anonymous'}
+              </Text>
+              <Text style={[styles.timeAgo, { color: isDarkMode ? '#aaa' : '#777' }]}>
+                {formatDate(item.createdAt)}
+              </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.moreButton}>
-            <Feather name="more-horizontal" size={24} color={colors.onSurface} />
-          </TouchableOpacity>
+          
+          <View style={styles.contentHeader}>
+            <Text style={[styles.postTitle, { color: colors.onSurface }]} numberOfLines={2}>
+              {item.title}
+            </Text>
+            {isGrammarPost && (
+              <View style={[styles.tagBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.tagText}>Grammar</Text>
+              </View>
+            )}
+          </View>
+          
+          <Text 
+            style={[
+              styles.postDescription, 
+              { color: isDarkMode ? 'rgba(220, 220, 225, 0.9)' : colors.onSurfaceVarient }
+            ]} 
+            numberOfLines={3}
+          >
+            {item.description}
+          </Text>
         </View>
         
-        <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.title}</Text>
-        <Text style={[styles.postDescription, { color: colors.onSurfaceVarient }]}>{item.description}</Text>
-        
-        {(item.mainImage || true) && (
-          <Image 
-            source={item.mainImage ? { uri: item.mainImage } : { uri: 'https://placehold.co/600x400?text=No+Image' }} 
-            style={styles.postImage} 
-            resizeMode="cover"
-          />
+        {item.mainImage && (
+          <View style={[styles.imageContainer, { borderColor: separatorColor }]}>
+            <Image 
+              source={{ uri: item.mainImage }} 
+              style={styles.postImage} 
+              resizeMode="cover"
+            />
+          </View>
         )}
         
-        <View style={styles.postStats}>
-          <TouchableOpacity style={styles.statItem}>
-            <Ionicons name="heart-outline" size={22} color={colors.onSurface} />
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalLike || 0}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.statItem}>
-            <Ionicons name="chatbubble-outline" size={22} color={colors.onSurface} />
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalComment || 0}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.statItem}>
-            <Feather name="repeat" size={22} color={colors.onSurface} />
-            <Text style={[styles.statText, { color: colors.onSurface }]}>0</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.statItem}>
-            <Feather name="share" size={22} color={colors.onSurface} />
-            <Text style={[styles.statText, { color: colors.onSurface }]}>0</Text>
+        {isGrammarPost && (
+          <View style={[
+            styles.tipPreview, 
+            { 
+              borderTopColor: separatorColor,
+              borderBottomColor: separatorColor,
+              backgroundColor: tipBackground
+            }
+          ]}>
+            <Text style={[styles.tipPreviewTitle, { color: colors.primary }]}>
+              <MaterialIcons name="lightbulb" size={18} color={colors.primary} /> 
+              English Tip Preview:
+            </Text>
+            <Text style={[styles.tipPreviewContent, { color: colors.onSurface }]} numberOfLines={1}>
+              {item.steps[0]}
+            </Text>
+            {item.steps.length > 1 && (
+              <Text style={[styles.tipPreviewMore, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
+                +{item.steps.length - 1} more...
+              </Text>
+            )}
+          </View>
+        )}
+        
+        <View style={[styles.postStats, { borderTopColor: separatorColor }]}>
+          <View style={styles.statItem}>
+            <Ionicons name="heart-outline" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
+              {item.totalLike || 0}
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="chatbubble-outline" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
+              {item.totalComment || 0}
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Feather name="eye" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
+              {item.totalView || 0}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.statItem} 
+            onPress={(e) => {
+              e.stopPropagation();
+              handleSharePost(item);
+            }}
+          >
+            <Feather name="share" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>Share</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
-      <View style={[styles.header, { borderBottomColor: colors.outline, backgroundColor: colors.surfaceContainer }]}>
-        <View style={styles.tabContainer}>
-          <TouchableOpacity style={[styles.tabButton, styles.activeTab]}>
-            <Text style={[styles.activeTabText, { color: colors.primary }]}>Dành cho bạn</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tabButton}>
-            <Text style={[styles.tabText, { color: colors.onSurfaceVarient }]}>Đang theo dõi</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={posts}
-          renderItem={renderItem}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: colors.onSurfaceVarient }]}>Không có bài viết nào</Text>
+    <View style={[styles.container, { 
+      backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer 
+    }]}>
+      <FlatList
+        data={posts}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListHeaderComponent={
+          <View>
+            
+            {/* Tabs for For You and Following */}
+            <View style={[styles.tabContainer, { borderBottomColor: colors.outlineVariant }]}>
+              <TouchableOpacity 
+                style={[
+                  styles.tab, 
+                  activeTab === 'forYou' ? [styles.activeTab, { borderBottomColor: colors.primary }] : {}
+                ]}
+                onPress={() => setActiveTab('forYou')}
+              >
+                <Text 
+                  style={[
+                    styles.tabText, 
+                    { color: activeTab === 'forYou' ? colors.primary : colors.onSurfaceVarient }
+                  ]}
+                >
+                  Dành cho bạn
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.tab, 
+                  activeTab === 'following' ? [styles.activeTab, { borderBottomColor: colors.primary }] : {}
+                ]}
+                onPress={() => {
+                  if (!userToken) {
+                    Alert.alert(
+                      "Đăng nhập", 
+                      "Bạn cần đăng nhập để xem bài viết từ người dùng bạn đang theo dõi",
+                      [
+                        { text: "Hủy", style: "cancel" },
+                        { text: "Đăng nhập", onPress: () => navigation.navigate("SignIn") }
+                      ]
+                    );
+                  } else {
+                    setActiveTab('following');
+                  }
+                }}
+              >
+                <Text 
+                  style={[
+                    styles.tabText, 
+                    { color: activeTab === 'following' ? colors.primary : colors.onSurfaceVarient }
+                  ]}
+                >
+                  Đang theo dõi
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
-        />
-      )}
+          </View>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={[
+                styles.emptyText, 
+                { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }
+              ]}>
+                {activeTab === 'following' ? 'Bạn chưa theo dõi ai hoặc họ chưa đăng bài' : 'Không có bài viết nào'}
+              </Text>
+            </View>
+          )
+        }
+      />
     </View>
   );
 };
@@ -158,118 +328,181 @@ const HomePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 70,
+  },
+  listContainer: {
+    padding: 15,
+    paddingBottom: 20,
   },
   header: {
-    paddingTop: 0,
-    paddingHorizontal: 0,
-    borderBottomWidth: 0.5,
+    marginBottom: 15,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 0,
-  },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 15,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#BE0303',
-  },
-  tabText: {
-    fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
-  },
-  activeTabText: {
-    fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    paddingBottom: 120,
-  },
-  postContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    borderBottomWidth: 0.5,
-    marginBottom: 3,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 10,
-  },
-  username: {
-    fontSize: 15,
-    fontFamily: 'PlayfairDisplay-Bold',
-  },
-  timeAgo: {
-    color: '#777',
-    fontSize: 13,
-    fontFamily: 'PlayfairDisplay-Regular',
-  },
-  moreButton: {
-    padding: 5,
-  },
-  postTitle: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 24,
     fontFamily: 'PlayfairDisplay-Bold',
     marginBottom: 5,
   },
-  postDescription: {
-    fontSize: 14,
-    marginBottom: 10,
+  headerSubtitle: {
+    fontSize: 16,
     fontFamily: 'PlayfairDisplay-Regular',
   },
-  postImage: {
+  tabContainer: {
+    display: "flex",
+    flexDirection: 'row',
+    justifyContent: "space-between",
+    marginBottom: 20,
+    borderBottomWidth: 0.5,
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 10,
   },
-  postStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 10,
-  },
-  statItem: {
-    flexDirection: 'row',
+  tab: {
+    paddingVertical: 12,
+    width: '50%',
     alignItems: 'center',
+    paddingBottom: 15,
   },
-  statText: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+  activeTab: {
+    borderBottomWidth: 2,
+    marginBottom: -0.5, 
   },
-  emptyContainer: {
-    flex: 1,
+  tabText: {
+    fontSize: 16,
+    fontFamily: 'PlayfairDisplay-Bold',
+  },
+  loaderContainer: {
+    paddingVertical: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    height: 300,
+  },
+  emptyContainer: {
+    paddingVertical: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyText: {
     fontSize: 16,
     fontFamily: 'PlayfairDisplay-Regular',
-    textAlign: 'center',
-  }
+  },
+  separator: {
+    height: 18,
+  },
+  postCard: {
+    borderRadius: 15,
+    marginBottom: 10,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    borderWidth: 0.5,
+  },
+  imageContainer: {
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: 'rgba(150, 150, 150, 0.2)',
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+  },
+  postContent: {
+    padding: 15,
+    paddingBottom: 10,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 0.5,
+    borderColor: 'rgba(150, 150, 150, 0.3)',
+  },
+  username: {
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Bold',
+  },
+  timeAgo: {
+    color: '#777',
+    fontSize: 12,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  contentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  postTitle: {
+    fontSize: 18,
+    fontFamily: 'PlayfairDisplay-Bold',
+    flex: 1,
+  },
+  tagBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 10,
+  },
+  tagText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'PlayfairDisplay-Medium',
+  },
+  postDescription: {
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Regular',
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  tipPreview: {
+    padding: 15,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderTopColor: 'rgba(150, 150, 150, 0.2)',
+    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+    backgroundColor: 'rgba(245, 245, 245, 0.1)',
+  },
+  tipPreviewTitle: {
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Bold',
+    marginBottom: 5,
+  },
+  tipPreviewContent: {
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Regular',
+    fontStyle: 'italic',
+  },
+  tipPreviewMore: {
+    fontSize: 12,
+    fontFamily: 'PlayfairDisplay-Regular',
+    marginTop: 4,
+  },
+  postStats: {
+    flexDirection: 'row',
+    padding: 15,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150, 150, 150, 0.2)',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  statText: {
+    marginLeft: 5,
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
 });
 
 export default HomePage; 

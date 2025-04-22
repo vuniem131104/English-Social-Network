@@ -20,33 +20,57 @@ import MainLayout from "./components/layout/MainLayout";
 
 const Stack = createNativeStackNavigator();
 
+const AuthScreenWrapper = ({children}) => {
+  return <MainLayout hideNavbar>{children}</MainLayout>;
+};
+
+const NormalScreenWrapper = ({children}) => {
+  return <MainLayout>{children}</MainLayout>;
+};
+
 const AppContent = () => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const userToken = useContext(AuthContext).userToken;
   return (
     <NavigationContainer theme={isDarkMode ? MyDarkTheme : MyLightTheme}>
       <StatusBar />
-      <MainLayout>
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={userToken != null ? "Home" : "SignIn"}>
-          <Stack.Screen name="Home" component={HomeTabs} />
-          <Stack.Screen
-            name="SignIn"
-            component={SignIn}
-          />
-          <Stack.Screen
-            name="SignUp"
-            component={SignUp}
-          />
-          <Stack.Screen
-            name="Cart"
-            component={RequireAuthentication(Cart, userToken)}
-          />
-          <Stack.Screen
-            name="Payment"
-            component={RequireAuthentication(Payment, userToken)}
-          />
-        </Stack.Navigator>
-      </MainLayout>
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={userToken != null ? "Home" : "SignIn"}>
+        <Stack.Screen name="Home">
+          {props => (
+            <NormalScreenWrapper>
+              <HomeTabs {...props} />
+            </NormalScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="SignIn">
+          {props => (
+            <AuthScreenWrapper>
+              <SignIn {...props} />
+            </AuthScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="SignUp">
+          {props => (
+            <AuthScreenWrapper>
+              <SignUp {...props} />
+            </AuthScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Cart">
+          {props => (
+            <NormalScreenWrapper>
+              <RequireAuthentication Component={Cart} userToken={userToken} {...props} />
+            </NormalScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Payment">
+          {props => (
+            <NormalScreenWrapper>
+              <RequireAuthentication Component={Payment} userToken={userToken} {...props} />
+            </NormalScreenWrapper>
+          )}
+        </Stack.Screen>
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

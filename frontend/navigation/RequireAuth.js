@@ -1,15 +1,15 @@
+import React from 'react';
 import SignIn from "../screens/auth/SignIn";
 
-const RequireAuthentication = (protectedScreen, userToken) => {
-
-    // This is a HOC()Higher Order Component).
-    // It will be used to make sure protected screens are not accessible to anyone accept authenticated user.
-
-
-    return (
-        userToken == null ? SignIn : protectedScreen
-
-    )
-}
+const RequireAuthentication = ({ userToken, ...props }) => {
+    
+    const ProtectedComponent = props.Component || props.Cart || props.Payment;
+    
+    if (!userToken) {
+        return <SignIn {...props} />;
+    }
+    
+    return <ProtectedComponent {...props} />;
+};
 
 export default RequireAuthentication;

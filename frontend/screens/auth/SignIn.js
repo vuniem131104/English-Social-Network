@@ -56,19 +56,19 @@ const SignIn = () => {
                     <Image
                         style={styles.logo}
                         resizeMode="contain"
-                        source={require("../../assets/logo.jpg")}
+                        source={require("../../assets/logo.png")}
                     />
                     <Text style={styles.appName}>English Social Network</Text>
                 </SafeAreaView>
 
                 <View style={styles.content}>
-                    <Text style={styles.welcomeText}>Chào mừng bạn đến với English Social Network!</Text>
-                    <Text style={styles.subText}>Đăng nhập để khám phá tất cả các bài viết từ khắp nơi trên thế giới.</Text>
+                    {/* <Text style={styles.welcomeText}>Chào mừng bạn đến với English Social Network!</Text> */}
+                    <Text style={styles.subText}>Đăng nhập để tạo bài viết về tiếng anh, bình luận và chia sẻ với bạn bè.</Text>
 
                     <View style={styles.inputWrapper}>
                         <Image style={styles.icon} source={require("../../assets/group-19.png")} />
                         <TextInput
-                            placeholder="Username"
+                            placeholder="Tên người dùng"
                             value={username}
                             onChangeText={setUsername}
                             placeholderTextColor="#ccc"
@@ -79,7 +79,7 @@ const SignIn = () => {
                     <View style={styles.inputWrapper}>
                         <Image style={styles.icon} source={require("../../assets/group-20.png")} />
                         <TextInput
-                            placeholder="Password"
+                            placeholder="Mật khẩu"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
         color: "#fff",
         marginTop: 12,
         fontWeight: "bold",
-        fontFamily: "PlayfairDisplay-Bold", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Bold", 
     },
     content: {
         gap: 20,
@@ -144,18 +144,19 @@ const styles = StyleSheet.create({
     welcomeText: {
         fontSize: 22,
         color: "#fff",
-        fontFamily: "PlayfairDisplay-Bold", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Bold", 
     },
     subText: {
         fontSize: 16,
         color: "#eee",
-        fontFamily: "PlayfairDisplay-Regular", // Thay đổi font
+        textAlign: "center",
+        fontFamily: "PlayfairDisplay-Regular", 
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#333",
-        padding: 14,
+        padding: 8,
         borderRadius: 12,
     },
     icon: {
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
         color: "white",
         flex: 1,
         fontSize: 16,
-        fontFamily: "PlayfairDisplay-Regular", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Regular", 
     },
     signInButton: {
         backgroundColor: "#BE0303",
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     },
     signInText: {
         color: "white",
-        fontFamily: "PlayfairDisplay-Bold", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Bold", 
     },
     guestButton: {
         backgroundColor: "#666",
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     },
     guestText: {
         color: "white",
-        fontFamily: "PlayfairDisplay-Bold", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Bold", 
     },
     footer: {
         flexDirection: "row",
@@ -200,11 +201,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         color: "#ccc",
-        fontFamily: "PlayfairDisplay-Regular", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Regular", 
     },
     signUpText: {
         color: "#fff",
-        fontFamily: "PlayfairDisplay-Bold", // Thay đổi font
+        fontFamily: "PlayfairDisplay-Bold", 
     },
 });
 

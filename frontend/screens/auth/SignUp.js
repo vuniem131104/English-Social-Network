@@ -57,14 +57,14 @@ const SignUp = () => {
                     <Image
                         style={styles.logo}
                         resizeMode="contain"
-                        source={require("../../assets/vector9.png")}
+                        source={require("../../assets/logo.png")}
                     />
                     <Text style={styles.appName}>English Social Network</Text>
                 </SafeAreaView>
 
                 <View style={styles.content}>
-                    <Text style={styles.title}>Hãy bắt đầu!</Text>
-                    <Text style={styles.subText}>Tạo tài khoản mới</Text>
+                    {/* <Text style={styles.title}>Hãy bắt đầu!</Text> */}
+                    <Text style={styles.subText}>Tạo tài khoản mới để tạo bài viết về tiếng anh, bình luận và chia sẻ với bạn bè.</Text>
 
                     <View style={styles.inputWrapper}>
                         <Image style={styles.icon} source={require("../../assets/group-191.png")} />
@@ -172,12 +172,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#eee",
         fontFamily: "PlayfairDisplay-Regular",
+        textAlign: "center",
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#333",
-        padding: 14,
+        padding: 8,
         borderRadius: 12,
     },
     icon: {

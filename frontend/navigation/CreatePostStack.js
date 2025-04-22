@@ -14,7 +14,6 @@ import { useSelector } from "react-redux";
 import { useTheme } from "@react-navigation/native";
 import { Ionicons, AntDesign, Feather, MaterialIcons } from '@expo/vector-icons';
 
-// Placeholder component cho create post screen
 const CreatePostScreen = () => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();

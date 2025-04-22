@@ -10,29 +10,38 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  FlatList
 } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { baseUrl } from '../../services/api';
 import { AuthContext } from '../../context/authContext';
 import NavbarTop from '../../components/header/NavbarTop';
+import { useTheme } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
 
 const CreatePostScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
+  const [steps, setSteps] = useState(['']);
   const [loading, setLoading] = useState(false);
   const { userToken } = useContext(AuthContext);
+  const isDarkMode = useSelector(state => state.theme.isDarkMode);
+
+  const backgroundColors = isDarkMode 
+    ? ['#1c1a1a', '#171717', '#0F0F0F'] 
+    : ['#F5F2EC', '#EFEAE0', '#E5E0D5'];
 
   const pickImage = async () => {
-    // Yêu cầu quyền truy cập thư viện ảnh
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
-      Alert.alert('Thông báo', 'Cần quyền truy cập thư viện ảnh để tiếp tục!');
+      Alert.alert('Notice', 'Photo library permission is required to continue!');
       return;
     }
 
@@ -49,16 +58,15 @@ const CreatePostScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert('Lỗi', 'Không thể chọn ảnh. Vui lòng thử lại!');
+      Alert.alert('Error', 'Could not select image. Please try again!');
     }
   };
 
   const takePicture = async () => {
-    // Yêu cầu quyền sử dụng camera
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
-      Alert.alert('Thông báo', 'Cần quyền truy cập camera để tiếp tục!');
+      Alert.alert('Notice', 'Camera permission is required to continue!');
       return;
     }
 
@@ -74,12 +82,31 @@ const CreatePostScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Error taking picture:", error);
-      Alert.alert('Lỗi', 'Không thể chụp ảnh. Vui lòng thử lại!');
+      Alert.alert('Error', 'Could not take picture. Please try again!');
     }
   };
 
   const removeImage = () => {
     setImage(null);
+  };
+
+  const addStep = () => {
+    setSteps([...steps, '']);
+  };
+
+  const updateStep = (text, index) => {
+    const newSteps = [...steps];
+    newSteps[index] = text;
+    setSteps(newSteps);
+  };
+
+  const removeStep = (index) => {
+    if (steps.length === 1) {
+      setSteps(['']);
+    } else {
+      const newSteps = steps.filter((_, i) => i !== index);
+      setSteps(newSteps);
+    }
   };
 
   const uploadImage = async () => {
@@ -108,23 +135,26 @@ const CreatePostScreen = ({ navigation }) => {
       return response.data.url;
     } catch (error) {
       console.error("Error uploading image:", error);
-      throw new Error('Không thể tải ảnh lên. Vui lòng thử lại!');
+      throw new Error('Could not upload image. Please try again!');
     }
   };
 
   const createPost = async () => {
     if (!title.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập tiêu đề bài viết!');
+      Alert.alert('Notice', 'Please enter a post title!');
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập nội dung bài viết!');
+      Alert.alert('Notice', 'Please enter post content!');
       return;
     }
 
+    // Filter out empty steps
+    const filteredSteps = steps.filter(step => step.trim() !== '');
+    
     if (!userToken) {
-      Alert.alert('Thông báo', 'Bạn cần đăng nhập để thực hiện chức năng này!');
+      Alert.alert('Notice', 'You need to log in to use this feature!');
       navigation.navigate('SignIn');
       return;
     }
@@ -147,56 +177,83 @@ const CreatePostScreen = ({ navigation }) => {
       const postData = {
         title,
         description,
-        mainImage: imageUrl
+        mainImage: imageUrl,
+        steps: filteredSteps.length > 0 ? filteredSteps : undefined
       };
 
       await axios.post(`${baseUrl}/posts`, postData, config);
       
-      Alert.alert('Thành công', 'Bài viết đã được tạo thành công!', [
+      Alert.alert('Success', 'Your post has been created successfully!', [
         { text: 'OK', onPress: () => navigation.navigate('Feed') }
       ]);
       
-      // Reset form
       setTitle('');
       setDescription('');
       setImage(null);
+      setSteps(['']);
     } catch (error) {
       console.error("Error creating post:", error);
-      Alert.alert('Lỗi', 'Không thể tạo bài viết. Vui lòng thử lại!');
+      Alert.alert('Error', 'Could not create post. Please try again!');
     } finally {
       setLoading(false);
     }
   };
+
+  const renderStepInput = ({ item, index }) => (
+    <View style={styles.stepInputContainer}>
+      <View style={styles.stepNumberContainer}>
+        <Text style={styles.stepNumber}>{index + 1}</Text>
+      </View>
+      <TextInput
+        style={styles.stepInput}
+        placeholder="Enter English grammar rule or tip..."
+        placeholderTextColor={colors.onSurfaceVarient}
+        value={item}
+        onChangeText={(text) => updateStep(text, index)}
+        multiline
+      />
+      <TouchableOpacity style={styles.removeStepButton} onPress={() => removeStep(index)}>
+        <Ionicons name="close-circle" size={24} color={colors.primary} />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
-      <LinearGradient colors={['#BE0303', '#1c1a1a', '#000000']} style={styles.container}>
+      <LinearGradient colors={backgroundColors} style={styles.container}>
         <NavbarTop />
         
         <ScrollView style={styles.scrollView}>
-          <Text style={styles.headerTitle}>Tạo bài viết mới</Text>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Create New Post</Text>
           
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Tiêu đề</Text>
+          <View style={styles.categoryContainer}>
+            <View style={[styles.categoryBadge, { backgroundColor: colors.primary }]}>
+              <MaterialIcons name="menu-book" size={16} color="#fff" />
+              <Text style={styles.categoryText}>English Learning</Text>
+            </View>
+          </View>
+          
+          <View style={[styles.inputContainer, { borderColor: colors.outline }]}>
+            <Text style={[styles.label, { color: colors.onSurface }]}>Title</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Nhập tiêu đề bài viết..."
-              placeholderTextColor="#999"
+              style={[styles.input, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
+              placeholder="Enter post title..."
+              placeholderTextColor={colors.onSurfaceVarient}
               value={title}
               onChangeText={setTitle}
               maxLength={100}
             />
           </View>
           
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nội dung</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.outline }]}>
+            <Text style={[styles.label, { color: colors.onSurface }]}>Description</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Chia sẻ suy nghĩ của bạn..."
-              placeholderTextColor="#999"
+              style={[styles.input, styles.textArea, { color: colors.onSurface, backgroundColor: colors.surfaceContainerLow }]}
+              placeholder="Share your English learning tip or grammar rule explanation..."
+              placeholderTextColor={colors.onSurfaceVarient}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -204,33 +261,66 @@ const CreatePostScreen = ({ navigation }) => {
             />
           </View>
           
-          <View style={styles.imageSection}>
-            <Text style={styles.label}>Hình ảnh</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.outline }]}>
+            <View style={styles.sectionHeaderContainer}>
+              <MaterialIcons name="lightbulb" size={20} color={colors.primary} />
+              <Text style={[styles.label, { color: colors.onSurface }]}>Grammar Tips</Text>
+            </View>
+            <Text style={[styles.helperText, { color: colors.onSurfaceVarient }]}>
+              Add step-by-step grammar rules or English expressions
+            </Text>
+            
+            <FlatList
+              data={steps}
+              renderItem={renderStepInput}
+              keyExtractor={(_, index) => `step-${index}`}
+              scrollEnabled={false}
+              style={styles.stepsList}
+            />
+            
+            <TouchableOpacity style={[styles.addButton, { borderColor: colors.primary }]} onPress={addStep}>
+              <Ionicons name="add" size={20} color={colors.primary} />
+              <Text style={[styles.addButtonText, { color: colors.primary }]}>Add another tip</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={[styles.imageSection, { borderColor: colors.outline }]}>
+            <Text style={[styles.label, { color: colors.onSurface }]}>Image</Text>
             
             {image ? (
               <View style={styles.selectedImageContainer}>
                 <Image source={{ uri: image }} style={styles.selectedImage} />
                 <TouchableOpacity style={styles.removeImageButton} onPress={removeImage}>
-                  <Ionicons name="close-circle" size={24} color="#BE0303" />
+                  <Ionicons name="close-circle" size={24} color={colors.primary} />
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.imageOptions}>
-                <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-                  <MaterialIcons name="photo-library" size={24} color="#fff" />
-                  <Text style={styles.imageButtonText}>Chọn từ thư viện</Text>
+                <TouchableOpacity 
+                  style={[styles.imageButton, { backgroundColor: colors.surfaceContainerHigh }]} 
+                  onPress={pickImage}
+                >
+                  <MaterialIcons name="photo-library" size={24} color={colors.onSurface} />
+                  <Text style={[styles.imageButtonText, { color: colors.onSurface }]}>Choose from library</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.imageButton} onPress={takePicture}>
-                  <MaterialIcons name="camera-alt" size={24} color="#fff" />
-                  <Text style={styles.imageButtonText}>Chụp ảnh mới</Text>
+                <TouchableOpacity 
+                  style={[styles.imageButton, { backgroundColor: colors.surfaceContainerHigh }]} 
+                  onPress={takePicture}
+                >
+                  <MaterialIcons name="camera-alt" size={24} color={colors.onSurface} />
+                  <Text style={[styles.imageButtonText, { color: colors.onSurface }]}>Take a picture</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
           
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.disabledButton]}
+            style={[
+              styles.submitButton, 
+              { backgroundColor: colors.primary },
+              loading && styles.disabledButton
+            ]}
             onPress={createPost}
             disabled={loading}
           >
@@ -239,7 +329,7 @@ const CreatePostScreen = ({ navigation }) => {
             ) : (
               <>
                 <Ionicons name="send" size={20} color="#fff" />
-                <Text style={styles.submitButtonText}>Đăng bài viết</Text>
+                <Text style={styles.submitButtonText}>Post</Text>
               </>
             )}
           </TouchableOpacity>
@@ -258,88 +348,162 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   headerTitle: {
-    color: '#fff',
     fontSize: 24,
     fontFamily: 'PlayfairDisplay-Bold',
-    marginBottom: 20,
-    marginTop: 10,
+    marginBottom: 15,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  categoryText: {
+    color: '#fff',
+    marginLeft: 5,
+    fontFamily: 'PlayfairDisplay-Medium',
+    fontSize: 14,
   },
   inputContainer: {
     marginBottom: 20,
+    borderWidth: 0.5,
+    borderRadius: 12,
+    padding: 15,
+  },
+  sectionHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
   },
   label: {
-    color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'PlayfairDisplay-Bold',
-    marginBottom: 8,
+    marginBottom: 10,
+    marginLeft: 5,
+  },
+  helperText: {
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Regular',
+    marginBottom: 15,
+    fontStyle: 'italic',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 10,
-    color: '#fff',
-    padding: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    padding: 10,
+    borderRadius: 8,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   textArea: {
-    height: 150,
-    textAlignVertical: 'top',
+    minHeight: 100,
+    paddingTop: 12,
+  },
+  stepsList: {
+    marginBottom: 10,
+  },
+  stepInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  stepNumberContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#BE0303',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  stepNumber: {
+    color: '#fff',
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 14,
+  },
+  stepInput: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    fontFamily: 'PlayfairDisplay-Regular',
+    fontSize: 14,
+    color: '#fff',
+  },
+  removeStepButton: {
+    marginLeft: 10,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  addButtonText: {
+    marginLeft: 5,
+    fontFamily: 'PlayfairDisplay-Medium',
+    fontSize: 14,
   },
   imageSection: {
     marginBottom: 20,
+    borderWidth: 0.5,
+    borderRadius: 12,
+    padding: 15,
   },
   imageOptions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
   },
   imageButton: {
-    backgroundColor: 'rgba(190, 3, 3, 0.5)',
-    borderRadius: 10,
-    padding: 15,
+    flexDirection: 'row',
     alignItems: 'center',
-    flex: 0.48,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+    width: '45%',
+    justifyContent: 'center',
   },
   imageButtonText: {
-    color: '#fff',
-    marginTop: 8,
-    fontFamily: 'PlayfairDisplay-Regular',
+    marginLeft: 8,
+    fontFamily: 'PlayfairDisplay-Medium',
     fontSize: 14,
   },
   selectedImageContainer: {
     position: 'relative',
+    alignItems: 'center',
     marginTop: 10,
   },
   selectedImage: {
     width: '100%',
     height: 200,
-    borderRadius: 10,
-    resizeMode: 'cover',
+    borderRadius: 8,
   },
   removeImageButton: {
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#BE0303',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 30,
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20,
+    marginBottom: 80,
+    width: '100%',
+    height: 56,
   },
   disabledButton: {
-    backgroundColor: '#666',
     opacity: 0.7,
   },
   submitButtonText: {
