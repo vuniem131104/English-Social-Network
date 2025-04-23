@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Image } from "expo-image";
-import { StyleSheet, Text, View, Pressable, Switch, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, Pressable, Switch, SafeAreaView, Alert } from "react-native";
 import { Padding, Color, FontSize, Border, FontFamily } from "../../GlobalStyles";
 import ButtonPrimary from "../button/ButtonPrimary";
 import { useNavigation, useTheme } from "@react-navigation/native";
@@ -9,7 +9,7 @@ import { toggleTheme } from "../../store";
 import { useContext } from "react";
 import { AuthContext } from "../../context/authContext";
 
-const SettingsMenu = () => {
+const SettingsMenu = ({ closeMenu }) => {
   const { colors } = useTheme();
   const { logout, userToken, userInfo } = useContext(AuthContext);
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
@@ -19,14 +19,74 @@ const SettingsMenu = () => {
     dispatch(toggleTheme());
   };
 
+  const handleNavigation = (route, params = {}) => {
+    closeMenu && closeMenu();
+    navigation.navigate(route, params);
+  };
+
+  const handleAboutUs = () => {
+    closeMenu && closeMenu();
+    Alert.alert(
+      "Về chúng tôi",
+      "English Social là nền tảng học tiếng Anh xã hội hóa. Chúng tôi cung cấp không gian để người dùng chia sẻ kiến thức, mẹo học tiếng Anh và các tài nguyên học tập chất lượng.",
+      [{ text: "Đóng" }]
+    );
+  };
+
+  const handleFeedback = () => {
+    closeMenu && closeMenu();
+    Alert.alert(
+      "Phản hồi",
+      "Chúng tôi rất mong nhận được phản hồi từ bạn! Vui lòng gửi phản hồi của bạn đến email: feedback@englishsocial.com",
+      [{ text: "Đóng" }]
+    );
+  };
+
+  const handleProfilePress = () => {
+    if (userToken) {
+      handleNavigation('UserProfile', { userId: userInfo?.id });
+    } else {
+      Alert.alert(
+        "Đăng nhập", 
+        "Bạn cần đăng nhập để xem trang cá nhân",
+        [
+          { text: "Hủy", style: "cancel" },
+          { text: "Đăng nhập", onPress: () => handleNavigation("SignIn") }
+        ]
+      );
+    }
+  };
+
   return (
     <View style={[styles.settingsMenu, {backgroundColor: colors.surfaceContainerHigh, shadowColor: colors.primaryShadow}]}>
-      <MenuItem colors={colors} imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")} text="Về chúng tôi" />
-      <MenuItem colors={colors} imageSource={isDarkMode ? require("../../assets/item.png") : require("../../assets/navbaritem.png")} text="Cài đặt" />
-      <MenuItem colors={colors} imageSource={isDarkMode ? require("../../assets/Frame14.png") : require("../../assets/frame-14.png")} text="Giỏ hàng" func={() => {
-        navigation.navigate("Cart");
-      }} />
-      <MenuItem colors={colors} isDarkMode={isDarkMode} imageSource={isDarkMode ? require("../../assets/Frame15.png") : require("../../assets/frame-141.png")} text="Phản hồi" />
+      <MenuItem 
+        colors={colors} 
+        imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")} 
+        text="Về chúng tôi" 
+        func={handleAboutUs} 
+      />
+      
+      <MenuItem 
+        colors={colors} 
+        imageSource={isDarkMode ? require("../../assets/item.png") : require("../../assets/navbaritem.png")} 
+        text="Cài đặt" 
+        func={() => handleNavigation("Settings")} 
+      />
+      
+      {/* <MenuItem 
+        colors={colors} 
+        imageSource={isDarkMode ? require("../../assets/Frame14.png") : require("../../assets/frame-14.png")} 
+        text="Giỏ hàng" 
+        func={() => handleNavigation("Cart")} 
+      /> */}
+      
+      <MenuItem 
+        colors={colors} 
+        isDarkMode={isDarkMode} 
+        imageSource={isDarkMode ? require("../../assets/Frame15.png") : require("../../assets/frame-141.png")} 
+        text="Phản hồi" 
+        func={handleFeedback} 
+      />
       
       {userToken != null && userInfo && (
         <MenuItem 
@@ -34,6 +94,7 @@ const SettingsMenu = () => {
           isDarkMode={isDarkMode} 
           imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")} 
           text={userInfo?.username || userInfo?.name || 'Người dùng'} 
+          func={handleProfilePress}
         />
       )}
       
@@ -43,14 +104,14 @@ const SettingsMenu = () => {
             textSize={FontSize.labelLargeBold_size}
             textMargin={8}
             buttonPrimaryFlex={1}
-            onPressButton={() => { navigation.navigate("SignIn") }}
+            onPressButton={() => { handleNavigation("SignIn") }}
           />
           <ButtonPrimary text="Sign up"
             textSize={FontSize.labelLargeBold_size}
             buttonPrimaryBackgroundColor={colors.primaryFixed}
             buttonPrimaryMarginLeft={15}
             buttonPrimaryFlex={1}
-            onPressButton={() => { navigation.navigate("SignUp") }}
+            onPressButton={() => { handleNavigation("SignUp") }}
           />
         </View>
       ) : (
@@ -62,6 +123,7 @@ const SettingsMenu = () => {
             onPressButton={() => { 
               try {
                 logout();
+                closeMenu && closeMenu();
               } catch (error) {
                 console.error("Logout error:", error);
               }

@@ -9,8 +9,8 @@ import { useFonts } from "expo-font";
 
 import SignIn from "./screens/auth/SignIn";
 import SignUp from "./screens/auth/SignUp";
-import Cart from "./screens/shopping/Cart";
-import Payment from "./screens/shopping/Payment";
+import CartScreen from "./screens/Shopping/CartScreen";
+import OrderConfirmationScreen from "./screens/Shopping/OrderConfirmationScreen";
 import { StatusBar } from "react-native";
 import { AuthContext, AuthProvider } from "./context/authContext";
 import HomeTabs from "./navigation/HomeTabs";
@@ -59,14 +59,14 @@ const AppContent = () => {
         <Stack.Screen name="Cart">
           {props => (
             <NormalScreenWrapper>
-              <RequireAuthentication Component={Cart} userToken={userToken} {...props} />
+              <RequireAuthentication Component={CartScreen} userToken={userToken} {...props} />
             </NormalScreenWrapper>
           )}
         </Stack.Screen>
-        <Stack.Screen name="Payment">
+        <Stack.Screen name="OrderConfirmation">
           {props => (
             <NormalScreenWrapper>
-              <RequireAuthentication Component={Payment} userToken={userToken} {...props} />
+              <RequireAuthentication Component={OrderConfirmationScreen} userToken={userToken} {...props} />
             </NormalScreenWrapper>
           )}
         </Stack.Screen>

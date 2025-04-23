@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import NavbarBottom from "../components/footer/NavbarBottom";
-import ShoppingStackScreen from "./ShoppingStack";
+import ShoppingStackScreen, { getShoppingTabBarVisibility } from "./ShoppingStack";
 import HomeStackScreen from "./HomeStack";
 import SearchStackScreen from "./SearchStack";
 import CreatePostStackScreen from "./CreatePostStack";
@@ -31,6 +31,11 @@ export default function HomeTabs() {
             <Tab.Screen
                 name="Shopping"
                 component={ShoppingStackScreen}
+                options={({ route }) => ({
+                    tabBarStyle: {
+                        display: getShoppingTabBarVisibility(route) ? 'flex' : 'none'
+                    }
+                })}
             />
         </Tab.Navigator>
     );

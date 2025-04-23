@@ -48,3 +48,63 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+# EnglishSocial Shopping Module
+
+## Overview
+The shopping module for EnglishSocial provides a complete e-commerce experience for purchasing English learning resources. Users can browse products, add them to cart, and complete the checkout process.
+
+## Features
+- Product browsing by categories (Grammar, Vocabulary, Exam Prep, Courses)
+- Product search functionality
+- Shopping cart with quantity adjustments
+- Order confirmation with animated success feedback
+
+## Key Components
+
+### 1. Shop Screen
+- Displays product listings organized by categories
+- Features search functionality
+- Shows featured products in a horizontal carousel
+- Provides easy access to the shopping cart
+
+### 2. Cart Screen
+- Lists all items added to cart
+- Allows quantity adjustment for each item
+- Calculates subtotal, shipping, and total costs
+- Provides checkout functionality
+
+### 3. Order Confirmation Screen
+- Confirms successful order placement
+- Displays order details including items purchased
+- Shows estimated delivery date
+- Provides option to continue shopping
+
+## State Management
+The shopping cart is managed through Redux:
+
+- **Actions**: Add to cart, remove from cart, update quantity, clear cart
+- **Reducer**: Handles cart state updates and calculates totals
+- **Store**: Maintains the global state for cart items
+
+## Navigation
+The shopping module integrates with the app's navigation system:
+
+- Shop screen is accessible from the main tab navigator
+- Cart is accessible from multiple points in the app
+- Order confirmation appears after successful checkout
+
+## Usage
+To use the shopping functionality:
+
+1. Navigate to the Shop tab in the bottom navigation
+2. Browse products or search for specific items
+3. Add products to cart using the cart icon
+4. View cart and adjust quantities as needed
+5. Proceed to checkout to complete purchase
+
+## Future Enhancements
+- User reviews and ratings
+- Wishlist functionality
+- Related products recommendations
+- Order history and tracking

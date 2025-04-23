@@ -1,4 +1,5 @@
 import { createSlice, configureStore } from "@reduxjs/toolkit";
+import cartReducer from '../redux/reducers/cartReducer';
 
 const themeSlice = createSlice({
     name: "theme",
@@ -39,6 +40,7 @@ const store = configureStore({
         theme: themeSlice.reducer,
         tab: tabSlice.reducer,
         gesture: gestureSlice.reducer,
+        cart: cartReducer
     }
 })
 
