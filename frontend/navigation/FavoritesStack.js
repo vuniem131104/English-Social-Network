@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 32,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
   },
   tabText: {
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 15,
   },
   sectionContainer: {
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     paddingHorizontal: 20,
     marginBottom: 10,
   },
@@ -318,21 +318,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   username: {
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
     marginBottom: 2,
   },
   timeAgo: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 12,
   },
   forYouTag: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 12,
     marginTop: 2,
   },
   postContent: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 15,
     lineHeight: 20,
     marginBottom: 15,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   statText: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 14,
   },
   viewMoreContainer: {
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   viewMoreText: {
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 14,
     marginBottom: 15,
   },
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewMoreButtonText: {
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 14,
   }
 });

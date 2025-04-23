@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   headerIcons: {
     flexDirection: 'row',
@@ -189,15 +189,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   username: {
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
   },
   topicHint: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 14,
   },
   postInput: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 16,
     minHeight: 100,
   },
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   addThreadText: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 14,
   },
   footer: {
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(150, 150, 150, 0.2)',
   },
   footerText: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 12,
   },
   postButton: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   postButtonText: {
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
   }
 });

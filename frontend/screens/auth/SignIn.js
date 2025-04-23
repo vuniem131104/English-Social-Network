@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
         color: "#fff",
         marginTop: 12,
         fontWeight: "bold",
-        fontFamily: "PlayfairDisplay-Bold", 
+        fontFamily: "Inter-Bold", 
     },
     content: {
         gap: 20,
@@ -144,13 +144,13 @@ const styles = StyleSheet.create({
     welcomeText: {
         fontSize: 22,
         color: "#fff",
-        fontFamily: "PlayfairDisplay-Bold", 
+        fontFamily: "Inter-Bold", 
     },
     subText: {
         fontSize: 16,
         color: "#eee",
         textAlign: "center",
-        fontFamily: "PlayfairDisplay-Regular", 
+        fontFamily: "Inter-Regular", 
     },
     inputWrapper: {
         flexDirection: "row",
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
         color: "white",
         flex: 1,
         fontSize: 16,
-        fontFamily: "PlayfairDisplay-Regular", 
+        fontFamily: "Inter-Regular", 
     },
     signInButton: {
         backgroundColor: "#BE0303",
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     },
     signInText: {
         color: "white",
-        fontFamily: "PlayfairDisplay-Bold", 
+        fontFamily: "Inter-Bold", 
     },
     guestButton: {
         backgroundColor: "#666",
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     },
     guestText: {
         color: "white",
-        fontFamily: "PlayfairDisplay-Bold", 
+        fontFamily: "Inter-Bold", 
     },
     footer: {
         flexDirection: "row",
@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         color: "#ccc",
-        fontFamily: "PlayfairDisplay-Regular", 
+        fontFamily: "Inter-Regular", 
     },
     signUpText: {
         color: "#fff",
-        fontFamily: "PlayfairDisplay-Bold", 
+        fontFamily: "Inter-Bold", 
     },
 });
 

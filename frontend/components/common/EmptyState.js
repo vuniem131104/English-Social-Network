@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#fff',
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginTop: 15,
     marginBottom: 10,
     textAlign: 'center',
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   message: {
     color: '#ccc',
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
 });
 

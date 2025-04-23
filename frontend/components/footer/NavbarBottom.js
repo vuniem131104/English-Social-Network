@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     marginTop: 2,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   navbarbottom: {
     position: "absolute",

@@ -50,12 +50,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     title: {
-        fontFamily: "PlayfairDisplay-Bold",
+        fontFamily: "Inter-Bold",
         fontSize: 15,
         textAlign: "center",
     },
     subtitle: {
-        fontFamily: "PlayfairDisplay-Regular",
+        fontFamily: "Inter-Regular",
         fontSize: 15,
         // fontStyle: "italic",
         textAlign: "center",

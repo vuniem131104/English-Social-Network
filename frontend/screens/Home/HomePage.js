@@ -104,7 +104,74 @@ const HomePage = () => {
     }
   };
 
-  const renderItem = ({ item }) => {
+  // Add a new function to handle post likes
+  const handleLikePost = async (post, index) => {
+    if (!userToken) {
+      Alert.alert(
+        "Đăng nhập", 
+        "Bạn cần đăng nhập để thích bài viết",
+        [
+          { text: "Hủy", style: "cancel" },
+          { text: "Đăng nhập", onPress: () => navigation.navigate("SignIn") }
+        ]
+      );
+      return;
+    }
+
+    try {
+      const config = {
+        headers: { Authorization: `Bearer ${userToken}` }
+      };
+      
+      // Create a copy of posts for updating
+      const updatedPosts = [...posts];
+      const currentPost = {...updatedPosts[index]};
+      
+      if (!currentPost.isLiked) {
+        try {
+          const response = await axios.post(`${baseUrl}/like/${currentPost.id}`, {}, config);
+          if (response.data && response.data.totalLike !== undefined) {
+            // Update post with new like count
+            currentPost.totalLike = response.data.totalLike;
+            currentPost.isLiked = true;
+          }
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            // Already liked
+            currentPost.isLiked = true;
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        try {
+          const response = await axios.delete(`${baseUrl}/like/${currentPost.id}`, config);
+          if (response.data && response.data.totalLike !== undefined) {
+            // Update post with new like count
+            currentPost.totalLike = response.data.totalLike;
+            currentPost.isLiked = false;
+          }
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            // Not liked
+            currentPost.isLiked = false;
+          } else {
+            throw error;
+          }
+        }
+      }
+      
+      // Update the post in the array
+      updatedPosts[index] = currentPost;
+      setPosts(updatedPosts);
+      
+    } catch (error) {
+      console.error("Error updating like:", error.message);
+      Alert.alert("Error", "Could not update like. Please try again later.");
+    }
+  };
+
+  const renderItem = ({ item, index }) => {
     // Determine if the post contains English grammar tips
     const isGrammarPost = item.steps && item.steps.length > 0;
     
@@ -198,24 +265,34 @@ const HomePage = () => {
         )}
         
         <View style={[styles.postStats, { borderTopColor: separatorColor }]}>
-          <View style={styles.statItem}>
-            <Ionicons name="heart-outline" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+          <TouchableOpacity 
+            style={styles.statItem}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleLikePost(item, index);
+            }}
+          >
+            <Ionicons 
+              name={item.isLiked ? "heart" : "heart-outline"} 
+              size={20} 
+              color={item.isLiked ? "#BE0303" : isDarkMode ? '#bbb' : colors.onSurfaceVarient} 
+            />
             <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
               {item.totalLike || 0}
             </Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statItem}>
             <Ionicons name="chatbubble-outline" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
             <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
               {item.totalComment || 0}
             </Text>
-          </View>
-          <View style={styles.statItem}>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statItem}>
             <Feather name="eye" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
             <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
               {item.totalView || 0}
             </Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.statItem} 
             onPress={(e) => {
@@ -339,12 +416,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginBottom: 5,
   },
   headerSubtitle: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   tabContainer: {
     display: "flex",
@@ -366,7 +443,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   loaderContainer: {
     paddingVertical: 50,
@@ -380,7 +457,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   separator: {
     height: 18,
@@ -427,12 +504,12 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   timeAgo: {
     color: '#777',
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   contentHeader: {
     flexDirection: 'row',
@@ -442,7 +519,7 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     flex: 1,
   },
   tagBadge: {
@@ -454,11 +531,11 @@ const styles = StyleSheet.create({
   tagText: {
     color: 'white',
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   postDescription: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     lineHeight: 20,
     marginBottom: 10,
   },
@@ -472,17 +549,17 @@ const styles = StyleSheet.create({
   },
   tipPreviewTitle: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginBottom: 5,
   },
   tipPreviewContent: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontStyle: 'italic',
   },
   tipPreviewMore: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginTop: 4,
   },
   postStats: {
@@ -501,7 +578,7 @@ const styles = StyleSheet.create({
   statText: {
     marginLeft: 5,
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
 });
 

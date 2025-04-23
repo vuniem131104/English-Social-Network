@@ -12,7 +12,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Share
+  Share,
+  Modal,
+  Pressable
 } from "react-native";
 import { useNavigation, useRoute, useTheme } from "@react-navigation/native";
 import { useSelector } from "react-redux";
@@ -32,11 +34,15 @@ const PostDetail = () => {
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreComments, setHasMoreComments] = useState(true);
+  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [isCommentsLoading, setCommentsLoading] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
 
   const darkBackground = isDarkMode ? '#121212' : colors.surfaceContainer;
   const cardBackground = isDarkMode ? 'rgba(32, 32, 36, 0.95)' : colors.surfaceContainerLow;
@@ -48,8 +54,20 @@ const PostDetail = () => {
 
   useEffect(() => {
     getPostDetails();
-    getComments();
+    getComments(1, true);
   }, [postId]);
+
+  // Add a focus effect to update the post details when returning to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh post details when screen comes into focus
+      if (postId) {
+        getPostDetails();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, postId]);
 
   const getPostDetails = async () => {
     setLoading(true);
@@ -58,11 +76,20 @@ const PostDetail = () => {
         headers: { Authorization: `Bearer ${userToken}` }
       } : {};
       
+      // Get post details with all information including like status if possible
       const response = await axios.get(`${baseUrl}/posts/${postId}`, config);
       setPost(response.data);
       
-      if (userToken && response.data.hasOwnProperty('isLiked')) {
-        setLiked(response.data.isLiked);
+      // Check if the post has isLiked field
+      if (userToken) {
+        if (response.data.hasOwnProperty('isLiked')) {
+          setLiked(response.data.isLiked);
+        } else {
+          // If API doesn't provide isLiked, default to not liked
+          setLiked(false);
+        }
+      } else {
+        setLiked(false);
       }
     } catch (error) {
       console.error("Error fetching post details:", error.message);
@@ -72,19 +99,58 @@ const PostDetail = () => {
     }
   };
 
-  const getComments = async () => {
-    setCommentsLoading(true);
+  const getComments = async (page = 1, resetComments = false) => {
+    if (page === 1) {
+      setCommentsLoading(true);
+    } else {
+      setIsLoadingMoreComments(true);
+    }
+    
     try {
       const config = userToken ? {
         headers: { Authorization: `Bearer ${userToken}` }
       } : {};
       
-      const response = await axios.get(`${baseUrl}/posts/${postId}/comments`, config);
-      setComments(Array.isArray(response.data) ? response.data : []);
+      const response = await axios.get(`${baseUrl}/comment/${postId}/${page}`, config);
+      
+      if (response.data && typeof response.data === 'object') {
+        const { nextPage, comments: newComments } = response.data;
+        
+        // Update comment list based on whether we're resetting or appending
+        if (resetComments) {
+          setComments(Array.isArray(newComments) ? newComments : []);
+        } else {
+          setComments(prevComments => [
+            ...prevComments, 
+            ...(Array.isArray(newComments) ? newComments : [])
+          ]);
+        }
+        
+        // Update pagination state
+        setHasMoreComments(nextPage);
+        setCurrentPage(page);
+      } else {
+        console.error("Unexpected response format:", response.data);
+        if (resetComments) {
+          setComments([]);
+        }
+        setHasMoreComments(false);
+      }
     } catch (error) {
       console.error("Error fetching comments:", error.message);
+      if (resetComments) {
+        setComments([]);
+      }
+      setHasMoreComments(false);
     } finally {
       setCommentsLoading(false);
+      setIsLoadingMoreComments(false);
+    }
+  };
+
+  const loadMoreComments = () => {
+    if (hasMoreComments && !isLoadingMoreComments && !isCommentsLoading) {
+      getComments(currentPage + 1);
     }
   };
 
@@ -101,12 +167,12 @@ const PostDetail = () => {
         headers: { Authorization: `Bearer ${userToken}` }
       };
       
-      await axios.post(`${baseUrl}/posts/${postId}/comments`, {
+      await axios.post(`${baseUrl}/comment/${postId}`, {
         content: newComment
       }, config);
       
       setNewComment("");
-      getComments(); 
+      getComments(1, true); // Reset and fetch first page after adding comment
       
       getPostDetails();
     } catch (error) {
@@ -129,14 +195,44 @@ const PostDetail = () => {
       };
       
       if (!liked) {
-        await axios.post(`${baseUrl}/posts/${postId}/like`, {}, config);
+        try {
+          const response = await axios.post(`${baseUrl}/like/${postId}`, {}, config);
+          if (response.data && response.data.totalLike !== undefined) {
+            // Update the post with new like count
+            setPost(prevPost => ({
+              ...prevPost,
+              totalLike: response.data.totalLike
+            }));
+            setLiked(true);
+          }
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            // User already liked the post
+            setLiked(true);
+          } else {
+            throw error; // Rethrow other errors
+          }
+        }
       } else {
-        await axios.delete(`${baseUrl}/posts/${postId}/like`, config);
+        try {
+          const response = await axios.delete(`${baseUrl}/like/${postId}`, config);
+          if (response.data && response.data.totalLike !== undefined) {
+            // Update the post with new like count
+            setPost(prevPost => ({
+              ...prevPost,
+              totalLike: response.data.totalLike
+            }));
+            setLiked(false);
+          }
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            // User hasn't liked the post
+            setLiked(false);
+          } else {
+            throw error; // Rethrow other errors
+          }
+        }
       }
-      
-      setLiked(!liked);
-      
-      getPostDetails();
     } catch (error) {
       console.error("Error updating like:", error.message);
       Alert.alert("Error", "Could not update like. Please try again later.");
@@ -212,26 +308,111 @@ const PostDetail = () => {
     return (
       <View style={styles.commentItem}>
         <Image 
-          source={item.author?.avatar 
-            ? { uri: item.author.avatar } 
-            : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.author?.name || 'User')}` }
+          source={item.user?.avatar 
+            ? { uri: item.user.avatar } 
+            : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.name || 'User')}` }
           } 
           style={[styles.commentAvatar, { borderColor: borderColor }]} 
         />
-        <View style={[styles.commentContent, { 
-          backgroundColor: commentBg,
-          borderColor: borderColor
-        }]}>
-          <View style={styles.commentHeader}>
-            <Text style={[styles.commentAuthor, { color: colors.onSurface }]}>
-              {item.author?.username || item.author?.name || 'Anonymous'}
+        <View style={styles.commentRightSection}>
+          <Text style={[styles.commentAuthor, { color: colors.onSurface }]}>
+            {item.user?.username || item.user?.name || 'Anonymous'}
+          </Text>
+          
+          <View style={[styles.commentContent]}>
+            <Text style={[styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' }]}>
+              {item.content}
             </Text>
-            <Text style={[styles.commentTime, { color: secondaryText }]}>{formatDate(item.createdAt)}</Text>
           </View>
-          <Text style={[styles.commentText, { color: colors.onSurface }]}>{item.content}</Text>
+          
+          <View style={styles.commentActions}>
+            <TouchableOpacity 
+              style={styles.commentActionButton}
+              onPress={() => handleLikeComment(item.id, item.isLiked)}
+            >
+              <Ionicons 
+                name={item.isLiked ? "heart" : "heart-outline"} 
+                size={20} 
+                color={item.isLiked ? "#E53935" : isDarkMode ? '#AAA' : '#666'} 
+              />
+              <Text style={[styles.actionText, { color: isDarkMode ? '#AAA' : '#666' }]}>
+                {item.totalLike || 0}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.commentActionButton}>
+              <Ionicons
+                name="chatbubble-outline"
+                size={18}
+                color={isDarkMode ? '#AAA' : '#666'}
+              />
+              <Text style={[styles.actionText, { color: isDarkMode ? '#AAA' : '#666' }]}>
+                0
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.commentActionButton}>
+              <Feather
+                name="share"
+                size={18}
+                color={isDarkMode ? '#AAA' : '#666'}
+              />
+              <Text style={[styles.actionText, { color: isDarkMode ? '#AAA' : '#666' }]}>
+                0
+              </Text>
+            </TouchableOpacity>
+            
+            <Text style={[styles.commentTime, { color: secondaryText, marginLeft: 'auto' }]}>
+              {formatDate(item.createdAt)}
+            </Text>
+          </View>
         </View>
       </View>
     );
+  };
+
+  const handleLikeComment = async (commentId, isLiked) => {
+    if (!userToken) {
+      navigation.navigate("SignIn");
+      return;
+    }
+
+    try {
+      const config = {
+        headers: { Authorization: `Bearer ${userToken}` }
+      };
+      
+      if (!isLiked) {
+        try {
+          const response = await axios.post(`${baseUrl}/comment/${commentId}/like`, {}, config);
+          // Refresh comments to update UI
+          getComments(currentPage, true);
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            // Comment already liked, refresh to update UI
+            getComments(currentPage, true);
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        try {
+          const response = await axios.delete(`${baseUrl}/comment/${commentId}/like`, config);
+          // Refresh comments to update UI
+          getComments(currentPage, true);
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            // Comment wasn't liked, refresh to update UI
+            getComments(currentPage, true);
+          } else {
+            throw error;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error updating comment like:", error.message);
+      Alert.alert("Error", "Could not update like. Please try again later.");
+    }
   };
 
   if (isLoading) {
@@ -303,11 +484,19 @@ const PostDetail = () => {
           
           {post.mainImage && (
             <View style={[styles.imageContainer, { borderColor: borderColor }]}>
-              <Image 
-                source={{ uri: post.mainImage }} 
-                style={styles.postImage} 
-                resizeMode="cover"
-              />
+              <TouchableOpacity 
+                activeOpacity={0.9} 
+                onPress={() => setImageModalVisible(true)}
+              >
+                <Image 
+                  source={{ uri: post.mainImage }} 
+                  style={styles.postImage} 
+                  resizeMode="cover"
+                />
+                <View style={styles.zoomIconContainer}>
+                  <Ionicons name="expand" size={20} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
             </View>
           )}
           
@@ -367,25 +556,81 @@ const PostDetail = () => {
           backgroundColor: cardBackground,
           borderColor: borderColor
         }]}>
-          <Text style={[styles.commentsTitle, { color: colors.onSurface }]}>Comments</Text>
+          <View style={styles.commentsHeader}>
+            <Text style={[styles.commentsTitle, { color: colors.onSurface }]}>Comments</Text>
+            <Text style={[styles.commentsCount, { color: secondaryText }]}>
+              {post.totalComment > 0 ? `${post.totalComment} comments` : 'No comments yet'}
+            </Text>
+          </View>
           
           {isCommentsLoading ? (
             <ActivityIndicator size="small" color={colors.primary} style={styles.commentLoader} />
           ) : comments.length > 0 ? (
-            <FlatList
-              data={comments}
-              renderItem={renderComment}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
-            />
+            <>
+              <FlatList
+                data={comments}
+                renderItem={renderComment}
+                keyExtractor={(item, index) => `comment-${item.id || index}`}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
+              />
+              
+              {hasMoreComments && (
+                <TouchableOpacity 
+                  style={[styles.loadMoreButton, { 
+                    borderColor: borderColor,
+                    backgroundColor: isDarkMode ? 'rgba(50, 50, 60, 0.5)' : 'rgba(240, 240, 245, 0.5)'
+                  }]} 
+                  onPress={loadMoreComments}
+                  disabled={isLoadingMoreComments}
+                >
+                  {isLoadingMoreComments ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <Text style={[styles.loadMoreButtonText, { color: colors.primary }]}>
+                        Load more comments
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={colors.primary} />
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </>
           ) : (
-            <Text style={[styles.noCommentsText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
-              No comments yet. Be the first to comment!
-            </Text>
+            <View style={styles.noCommentsContainer}>
+              <Ionicons 
+                name="chatbubble-ellipses-outline" 
+                size={40} 
+                color={isDarkMode ? 'rgba(100, 100, 120, 0.5)' : 'rgba(180, 180, 190, 0.5)'} 
+              />
+              <Text style={[styles.noCommentsText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
+                No comments yet. Be the first to comment!
+              </Text>
+            </View>
           )}
         </View>
       </ScrollView>
+      
+      {/* Image Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={imageModalVisible}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.imageModalContainer} 
+          onPress={() => setImageModalVisible(false)}
+        >
+          <Image
+            source={{ uri: post?.mainImage }}
+            style={styles.fullScreenImage}
+            resizeMode="contain"
+          />
+          
+        </Pressable>
+      </Modal>
       
       <View style={[styles.commentInputContainer, { 
         backgroundColor: darkBackground, 
@@ -427,6 +672,7 @@ const PostDetail = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -439,7 +685,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   postContainer: {
     marginHorizontal: 12,
@@ -484,12 +730,12 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 15,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   timeAgo: {
     color: '#777',
     fontSize: 13,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   contentSection: {
     padding: 15,
@@ -503,7 +749,7 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 20,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginRight: 10,
     flex: 1,
   },
@@ -516,23 +762,45 @@ const styles = StyleSheet.create({
   topicText: {
     color: '#fff',
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   postDescription: {
     fontSize: 16,
     marginBottom: 15,
     lineHeight: 24,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   imageContainer: {
     marginBottom: 15,
     borderTopWidth: 0.5,
     borderBottomWidth: 0.5,
     borderColor: 'rgba(150, 150, 150, 0.3)',
+    position: 'relative',
   },
   postImage: {
     width: '100%',
     height: 250,
+  },
+  zoomIconContainer: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '80%',
   },
   section: {
     margin: 15,
@@ -549,7 +817,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginLeft: 10,
   },
   grammarItem: {
@@ -570,7 +838,7 @@ const styles = StyleSheet.create({
   grammarNumberText: {
     color: '#fff',
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   grammarContent: {
     flex: 1,
@@ -581,7 +849,7 @@ const styles = StyleSheet.create({
   grammarText: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     lineHeight: 22,
     fontStyle: 'italic',
   },
@@ -593,7 +861,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
     marginLeft: 5,
   },
   postStats: {
@@ -614,7 +882,7 @@ const styles = StyleSheet.create({
   statText: {
     marginLeft: 5,
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   commentsSection: {
     padding: 15,
@@ -632,54 +900,65 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: 'rgba(150, 150, 150, 0.3)',
   },
+  commentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+  },
   commentsTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
-    marginBottom: 15,
+    fontFamily: 'Inter-Bold',
+  },
+  commentsCount: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
   },
   commentLoader: {
     marginVertical: 20,
   },
+  noCommentsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
   noCommentsText: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
-    marginVertical: 20,
+    marginTop: 10,
+    fontSize: 14,
   },
   commentItem: {
     flexDirection: 'row',
   },
   commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 10,
     borderWidth: 0.5,
     borderColor: 'rgba(150, 150, 150, 0.3)',
   },
-  commentContent: {
+  commentRightSection: {
     flex: 1,
-    backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: 'rgba(150, 150, 150, 0.2)',
   },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
+  commentContent: {
+    paddingBottom: 5,
   },
   commentAuthor: {
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
+    marginBottom: 2,
   },
   commentTime: {
-    color: '#777',
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   commentText: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -697,7 +976,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     maxHeight: 80,
     borderWidth: 0.5,
     borderColor: 'rgba(150, 150, 150, 0.3)',
@@ -709,7 +988,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
-  }
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 15,
+    borderTopWidth: 0.5,
+    borderRadius: 8,
+  },
+  loadMoreButtonText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    marginRight: 5,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    paddingVertical: 5,
+  },
+  commentActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 20,
+    paddingVertical: 3,
+  },
+  actionText: {
+    marginLeft: 5,
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+  },
 });
 
 export default PostDetail; 

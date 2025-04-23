@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { 
   Text, 
@@ -7,62 +7,69 @@ import {
   TextInput, 
   FlatList, 
   Image, 
-  TouchableOpacity 
+  TouchableOpacity,
+  ActivityIndicator 
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useTheme } from "@react-navigation/native";
 import { Ionicons } from '@expo/vector-icons';
+import { baseUrl } from "../services/api";
 
 // Placeholder data for search results
 const searchData = [
   {
-    id: '1',
-    username: 'benbencogivui',
-    displayName: 'Bên Bên Có Gì Vui',
-    followers: '46,2K người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=BB'
+    id: 100,
+    username: "benbencogivui",
+    name: "Bên Bên Có Gì Vui",
+    avatar: "https://ui-avatars.com/api/?name=BB",
+    totalFollowing: 120,
+    totalFollowers: 46200
   },
   {
-    id: '2',
-    username: 'ktln_thread',
-    displayName: 'KTLN',
-    followers: '10,3K người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=KT'
+    id: 101,
+    username: "ktln_thread",
+    name: "KTLN",
+    avatar: "https://ui-avatars.com/api/?name=KT",
+    totalFollowing: 85,
+    totalFollowers: 10300
   },
   {
-    id: '3',
-    username: '_blongg_05',
-    displayName: 'TRUONG BAO LONG',
-    followers: '79 người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=BL'
+    id: 102,
+    username: "_vuniem_05",
+    name: "LE HOANG VU",
+    avatar: "https://ui-avatars.com/api/?name=HV",
+    totalFollowing: 102,
+    totalFollowers: 79
   },
   {
-    id: '4',
-    username: 'ieltsfighter',
-    displayName: 'IELTS Fighter',
-    followers: '20K người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=IF'
+    id: 103,
+    username: "ieltsfighter",
+    name: "IELTS Fighter",
+    avatar: "https://ui-avatars.com/api/?name=IE",
+    totalFollowing: 45,
+    totalFollowers: 20000
   },
   {
-    id: '5',
-    username: '_daiphatthanh',
-    displayName: 'Đài Phát Thanh.',
-    followers: '73,1K người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=DPT'
+    id: 104,
+    username: "_daiphatthanh",
+    name: "Đài Phát Thanh.",
+    avatar: "https://ui-avatars.com/api/?name=DPT",
+    totalFollowing: 210,
+    totalFollowers: 73100
   },
   {
-    id: '6',
-    username: 'hoinguoingangnganguocvietnam',
-    displayName: 'Hội Người Ngang Ngược Việt Nam',
-    followers: '29,9K người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=HN'
+    id: 105,
+    username: "nguyenvanphuc",
+    name: "NGUYEN VAN PHUC",
+    avatar: "https://ui-avatars.com/api/?name=NV",
+    totalFollowing: 102,
+    totalFollowers: 79
   },
   {
-    id: '7',
-    username: 'soholacapmanhinh',
-    displayName: 'Sợ Hở Là Cập Màn Hình',
-    followers: '26,2K người theo dõi',
-    avatar: 'https://ui-avatars.com/api/?name=SH'
+    id: 106,
+    username: "vanphuc",
+    name: "NGUYEN VAN PHUC",
+    avatar: "https://ui-avatars.com/api/?name=NV",
   }
 ];
 
@@ -71,16 +78,72 @@ const SearchScreen = () => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();
   
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
+
+  useEffect(() => {
+    if (initialLoad) {
+      setInitialLoad(false);
+      return;
+    }
+    
+    const delaySearch = setTimeout(() => {
+      if (searchTerm.trim()) {
+        fetchUsers(searchTerm, 1);
+      } else {
+        setSearchResults([]);
+        setHasNextPage(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delaySearch);
+  }, [searchTerm]);
+
+  const fetchUsers = async (username, page) => {
+    if (!username.trim()) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${baseUrl}/search/username/${username}/${page}`);
+      const data = await response.json();
+      
+      if (page === 1) {
+        setSearchResults(data.users || []);
+      } else {
+        setSearchResults(prev => [...prev, ...(data.users || [])]);
+      }
+      
+      setHasNextPage(data.nextPage || false);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setSearchResults([]);
+      setHasNextPage(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMoreUsers = () => {
+    if (hasNextPage && !loading) {
+      fetchUsers(searchTerm, currentPage + 1);
+    }
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.userContainer}>
       <Image 
-        source={{ uri: item.avatar }} 
+        source={item.avatar ? { uri: item.avatar } : { uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}` }} 
         style={styles.avatar} 
       />
       <View style={styles.userInfo}>
         <Text style={[styles.username, { color: colors.onSurface }]}>{item.username}</Text>
-        <Text style={[styles.displayName, { color: colors.onSurfaceVarient }]}>{item.displayName}</Text>
-        <Text style={[styles.followers, { color: colors.onSurfaceVarient }]}>{item.followers}</Text>
+        <Text style={[styles.displayName, { color: colors.onSurfaceVarient }]}>{item.name}</Text>
+        <Text style={[styles.followers, { color: colors.onSurfaceVarient }]}>{item.totalFollowers} người theo dõi</Text>
       </View>
       <TouchableOpacity 
         style={[styles.followButton, { borderColor: colors.outline }]}
@@ -89,12 +152,21 @@ const SearchScreen = () => {
       </TouchableOpacity>
     </View>
   );
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  };
   
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
-      <View style={styles.headerContainer}>
+      {/* <View style={styles.headerContainer}>
         <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Tìm kiếm</Text>
-      </View>
+      </View> */}
       
       <View style={[styles.searchContainer, { backgroundColor: colors.surfaceContainerLow }]}>
         <Ionicons name="search" size={20} color={colors.onSurfaceVarient} />
@@ -102,15 +174,34 @@ const SearchScreen = () => {
           style={[styles.searchInput, { color: colors.onSurface }]}
           placeholder="Tìm kiếm"
           placeholderTextColor={colors.onSurfaceVarient}
+          value={searchTerm}
+          onChangeText={setSearchTerm}
         />
+        {searchTerm !== '' && (
+          <TouchableOpacity onPress={() => setSearchTerm('')}>
+            <Ionicons name="close-circle" size={20} color={colors.onSurfaceVarient} />
+          </TouchableOpacity>
+        )}
       </View>
       
       <FlatList
-        data={searchData}
+        data={searchTerm ? searchResults : searchData}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
+        ListFooterComponent={renderFooter}
+        onEndReached={loadMoreUsers}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={
+          searchTerm && !loading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: colors.onSurfaceVarient }]}>
+                Không tìm thấy người dùng nào
+              </Text>
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -129,6 +220,7 @@ const SearchStackScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 80,
   },
   headerContainer: {
     paddingHorizontal: 20,
@@ -136,7 +228,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 32,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -150,7 +242,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingLeft: 10,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 16,
   },
   listContainer: {
@@ -173,17 +265,17 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   username: {
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     fontSize: 16,
     marginBottom: 2,
   },
   displayName: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 14,
     marginBottom: 2,
   },
   followers: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 12,
   },
   followButton: {
@@ -193,8 +285,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   followText: {
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 14,
+  },
+  loaderContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  emptyContainer: {
+    paddingTop: 50,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
   }
 });
 

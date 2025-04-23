@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginBottom: 10,
   },
   tabsContainer: {
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   listContainer: {
     paddingHorizontal: 0,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginTop: 15,
   },
   notificationItem: {
@@ -392,13 +392,13 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     lineHeight: 20,
   },
   timeAgo: {
     color: '#777',
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginTop: 3,
   },
 });

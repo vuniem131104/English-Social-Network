@@ -14,7 +14,7 @@ const Dashboard = ({
             <NavbarTop />
             <View style={styles.body}>
                 <View style={styles.dashboardtitleFlexBox}>
-                    <Text className={'text-xl font-playfairBold'} style={{ color: colors.onSurface, fontFamily: "PlayfairDisplay-Bold", fontSize: 23 }}>{namePage}</Text>
+                    <Text className={'text-xl font-playfairBold'} style={{ color: colors.onSurface, fontFamily: "Inter-Bold", fontSize: 23 }}>{namePage}</Text>
                 </View>
             </View>
             <SafeAreaView className={'w-full flex-1 justify-center items-center'}>

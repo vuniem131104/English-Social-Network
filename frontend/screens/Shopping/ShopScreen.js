@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 15,
     paddingVertical: 8,
   },
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   categoryText: {
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
     fontSize: 14,
   },
   sectionContainer: {
@@ -627,15 +627,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   seeAllText: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   resultCount: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   featuredList: {
     paddingHorizontal: 15,
@@ -667,20 +667,20 @@ const styles = StyleSheet.create({
   featuredBadgeText: {
     color: 'white',
     fontSize: 10,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   featuredContent: {
     padding: 12,
   },
   featuredTitle: {
     fontSize: 15,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginBottom: 4,
     height: 40,
   },
   featuredAuthor: {
     fontSize: 13,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: 8,
   },
   featuredFooter: {
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
   },
   featuredPrice: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginLeft: 4,
   },
   productList: {
@@ -724,13 +724,13 @@ const styles = StyleSheet.create({
   },
   productTitle: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     height: 40,
     marginBottom: 4,
   },
   productAuthor: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: 6,
   },
   productMeta: {
@@ -748,12 +748,12 @@ const styles = StyleSheet.create({
   badgeText: {
     color: 'white',
     fontSize: 10,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   productFormat: {
     fontSize: 11,
     textAlign: 'right',
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   productFooter: {
     flexDirection: 'row',
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   addToCartBtn: {
     width: 32,
@@ -779,19 +779,19 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
     marginTop: 15,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     textAlign: 'center',
     marginBottom: 20,
   },
   resetText: {
     fontSize: 15,
-    fontFamily: 'PlayfairDisplay-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
   cartButton: {
     position: 'absolute',

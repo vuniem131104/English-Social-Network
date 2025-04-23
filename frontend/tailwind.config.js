@@ -9,6 +9,11 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
+                inter: ['Inter-Regular', 'sans-serif'],
+                interBold: ['Inter-Bold', 'sans-serif'],
+                interMedium: ['Inter-Medium', 'sans-serif'],
+                interRegular: ['Inter-Regular', 'sans-serif'],
+                interSemibold: ['Inter-SemiBold', 'sans-serif'],
                 playfair: ['PlayfairDisplay-Regular', 'serif'],
                 playfairBold: ['PlayfairDisplay-Bold', 'serif'],
                 playfairMedium: ['PlayfairDisplay-Medium', 'serif'],

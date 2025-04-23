@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   notificationsTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   notificationsActions: {
     flexDirection: 'row',
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   markAllReadText: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   notificationsContent: {
     maxHeight: 500,
@@ -395,12 +395,12 @@ const styles = StyleSheet.create({
   },
   notificationMessage: {
     fontSize: 14,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     marginBottom: 5,
   },
   notificationTime: {
     fontSize: 12,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   unreadDot: {
     position: 'absolute',
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     top: 15,
   },
   noNotificationsText: {
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 16,
     textAlign: 'center',
     padding: 30,
