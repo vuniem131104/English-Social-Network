@@ -31,6 +31,7 @@ const PostDetail = () => {
   const { userInfo, userToken } = useContext(AuthContext);
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();
+  const scrollViewRef = React.useRef(null);
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -155,9 +156,19 @@ const PostDetail = () => {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập nội dung bình luận");
+      return;
+    }
     if (!userToken) {
-      navigation.navigate("SignIn");
+      Alert.alert(
+        "Đăng nhập", 
+        "Bạn cần đăng nhập để bình luận",
+        [
+          { text: "Hủy", style: "cancel" },
+          { text: "Đăng nhập", onPress: () => navigation.navigate("SignIn") }
+        ]
+      );
       return;
     }
 
@@ -167,17 +178,49 @@ const PostDetail = () => {
         headers: { Authorization: `Bearer ${userToken}` }
       };
       
-      await axios.post(`${baseUrl}/comment/${postId}`, {
-        content: newComment
+      const response = await axios.post(`${baseUrl}/comment/${postId}`, {
+        content: newComment.trim()
       }, config);
       
-      setNewComment("");
-      getComments(1, true); // Reset and fetch first page after adding comment
-      
-      getPostDetails();
+      if (response.data) {
+        setNewComment("");
+        getComments(1, true); // Reset and fetch first page after adding comment
+        getPostDetails();
+        
+        // Show success message
+        Alert.alert("Thành công", "Bình luận của bạn đã được đăng");
+        
+        // Scroll to bottom after a short delay to allow the new comment to load
+        setTimeout(() => {
+          if (scrollViewRef.current) {
+            scrollViewRef.current.scrollToEnd({ animated: true });
+          }
+        }, 500);
+      } else {
+        throw new Error("Không thể đăng bình luận");
+      }
     } catch (error) {
       console.error("Error adding comment:", error.message);
-      Alert.alert("Error", "Could not add comment. Please try again later.");
+      let errorMessage = "Không thể đăng bình luận. Vui lòng thử lại sau.";
+      
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            errorMessage = "Nội dung bình luận không hợp lệ";
+            break;
+          case 401:
+            errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại";
+            break;
+          case 403:
+            errorMessage = "Bạn không có quyền bình luận";
+            break;
+          case 404:
+            errorMessage = "Bài viết không tồn tại";
+            break;
+        }
+      }
+      
+      Alert.alert("Lỗi", errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -438,15 +481,19 @@ const PostDetail = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[styles.container, { backgroundColor: darkBackground }]}
     >
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.postContainer, { 
           backgroundColor: cardBackground,
           borderColor: borderColor 
         }]}>
           <View style={[styles.postHeader, { borderBottomColor: borderColor }]}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            {/* <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <Ionicons name="arrow-back" size={24} color={colors.onSurface} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <View style={styles.userInfo}>
               <Image 
                 source={post.author?.avatar 
@@ -557,9 +604,9 @@ const PostDetail = () => {
           borderColor: borderColor
         }]}>
           <View style={styles.commentsHeader}>
-            <Text style={[styles.commentsTitle, { color: colors.onSurface }]}>Comments</Text>
+            <Text style={[styles.commentsTitle, { color: colors.onSurface }]}>Bình luận</Text>
             <Text style={[styles.commentsCount, { color: secondaryText }]}>
-              {post.totalComment > 0 ? `${post.totalComment} comments` : 'No comments yet'}
+              {post.totalComment > 0 ? `${post.totalComment} bình luận` : 'Chưa có bình luận nào'}
             </Text>
           </View>
           
@@ -589,7 +636,7 @@ const PostDetail = () => {
                   ) : (
                     <>
                       <Text style={[styles.loadMoreButtonText, { color: colors.primary }]}>
-                        Load more comments
+                        Xem thêm bình luận
                       </Text>
                       <Ionicons name="chevron-down" size={16} color={colors.primary} />
                     </>
@@ -605,10 +652,45 @@ const PostDetail = () => {
                 color={isDarkMode ? 'rgba(100, 100, 120, 0.5)' : 'rgba(180, 180, 190, 0.5)'} 
               />
               <Text style={[styles.noCommentsText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
-                No comments yet. Be the first to comment!
+                Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Comment Input Section */}
+        <View style={[styles.commentInputContainer, { 
+          backgroundColor: cardBackground,
+          borderColor: borderColor
+        }]}>
+          <TextInput
+            style={[styles.commentInput, { 
+              color: colors.onSurface, 
+              backgroundColor: isDarkMode ? 'rgba(40, 40, 45, 0.9)' : colors.surfaceContainerLow,
+              borderColor: borderColor
+            }]}
+            placeholder="Viết bình luận..."
+            placeholderTextColor={isDarkMode ? '#888' : colors.onSurfaceVarient}
+            value={newComment}
+            onChangeText={setNewComment}
+            multiline
+          />
+          <TouchableOpacity 
+            style={[
+              styles.sendButton, 
+              {backgroundColor: isSubmitting
+                ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh) 
+                : colors.primary}
+            ]} 
+            onPress={handleAddComment}
+            disabled={!newComment.trim() || isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="send" size={24} color="#fff" />
+            )}
+          </TouchableOpacity>
         </View>
       </ScrollView>
       
@@ -631,40 +713,6 @@ const PostDetail = () => {
           
         </Pressable>
       </Modal>
-      
-      <View style={[styles.commentInputContainer, { 
-        backgroundColor: darkBackground, 
-        borderTopColor: borderColor 
-      }]}>
-        <TextInput
-          style={[styles.commentInput, { 
-            color: colors.onSurface, 
-            backgroundColor: isDarkMode ? 'rgba(40, 40, 45, 0.9)' : colors.surfaceContainerLow,
-            borderColor: borderColor
-          }]}
-          placeholder="Add a comment..."
-          placeholderTextColor={isDarkMode ? '#888' : colors.onSurfaceVarient}
-          value={newComment}
-          onChangeText={setNewComment}
-          multiline
-        />
-        <TouchableOpacity 
-          style={[
-            styles.sendButton, 
-            {backgroundColor: (!newComment.trim() || isSubmitting) 
-              ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh) 
-              : colors.primary}
-          ]} 
-          onPress={handleAddComment}
-          disabled={!newComment.trim() || isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Ionicons name="send" size={24} color="#fff" />
-          )}
-        </TouchableOpacity>
-      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -885,20 +933,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
   },
   commentsSection: {
-    padding: 15,
     marginHorizontal: 12,
     marginBottom: 20,
     borderRadius: 15,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 1.00,
-    elevation: 1,
+    padding: 15,
     borderWidth: 0.5,
-    borderColor: 'rgba(150, 150, 150, 0.3)',
   },
   commentsHeader: {
     flexDirection: 'row',
@@ -963,13 +1002,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   commentInputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    marginHorizontal: 12,
+    marginBottom: 20,
+    borderRadius: 15,
+    padding: 15,
+    borderWidth: 0.5,
     flexDirection: 'row',
-    padding: 10,
-    borderTopWidth: 0.5,
+    alignItems: 'center',
   },
   commentInput: {
     flex: 1,
@@ -979,14 +1018,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     maxHeight: 80,
     borderWidth: 0.5,
-    borderColor: 'rgba(150, 150, 150, 0.3)',
   },
   sendButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingLeft: 4,
     marginLeft: 10,
   },
   loadMoreButton: {

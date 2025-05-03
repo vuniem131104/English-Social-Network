@@ -10,46 +10,36 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import { Modal } from "react-native";
 import { useSelector } from "react-redux";
-import { useTheme } from "@react-navigation/native";
-import { Ionicons, AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons, FontAwesome5, AntDesign } from "@expo/vector-icons";
 import { AuthContext } from "../context/authContext";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { baseUrl } from "../services/api";
 
-const CreatePostScreen = () => {
-  const isDarkMode = useSelector((state) => state.theme.isDarkMode);
-  const { colors } = useTheme();
-  const [postText, setPostText] = useState("");
+const CreatePostScreen = ({ navigation }) => {
+  const [topic, setTopic] = useState("");
+  const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+  const [steps, setSteps] = useState(['']);
   const [loading, setLoading] = useState(false);
-  const [showTopicInput, setShowTopicInput] = useState(false);
-  const [topicText, setTopicText] = useState(""); 
-  const { userToken, userInfo } = useContext(AuthContext);
+  const { userToken } = useContext(AuthContext);
+  const isDarkMode = useSelector((state) => state.theme.isDarkMode);
 
-  //test thêm
-  const [isModalVisible, setIsModalVisible] = useState(false); 
-  const [modalType, setModalType] = useState(""); 
-  const [stepsText, setStepsText] = useState("");
+  // Theme colors
+  const theme = {
+    background: isDarkMode ? '#000' : '#efe8dc',
+    surface: isDarkMode ? '#1A1A1A' : '#F2ECE4',
+    text: isDarkMode ? '#fff' : '#2B2B2B',
+    textSecondary: isDarkMode ? '#666' : '#757575',
+    accent: '#BE0303',
+    border: isDarkMode ? '#333' : '#E0E0E0',
+    iconPrimary: isDarkMode ? '#fff' : '#2B2B2B',
+    iconSecondary: isDarkMode ? '#666' : '#757575',
+  };
 
-  //lấy steps
-  const stringToSteps = (inputString) => {
-    if (!inputString || typeof inputString !== "string") {
-      return []; // Trả về mảng rỗng nếu input không hợp lệ
-    }
-    return inputString.split("\n"); // Tách chuỗi bằng ký tự xuống dòng
-  };
-  // lấy ảnh của người dùng
-  const getInitials = (str) => {
-    if (!str) return '';
-    const words = str.trim().split(' ');
-    const initials = words.slice(0, 2).map(word => word[0].toUpperCase()).join('');
-    return initials;
-  };
-  //set ảnh
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -74,10 +64,55 @@ const CreatePostScreen = () => {
     }
   };
 
-  // đẩy post
+  const takePicture = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Notice", "Camera permission is required to continue!");
+      return;
+    }
+
+    try {
+      let result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error taking picture:", error);
+      Alert.alert("Error", "Could not take picture. Please try again!");
+    }
+  };
+
+  const addStep = () => {
+    setSteps([...steps, '']);
+  };
+
+  const updateStep = (text, index) => {
+    const newSteps = [...steps];
+    newSteps[index] = text;
+    setSteps(newSteps);
+  };
+
+  const removeStep = (index) => {
+    if (steps.length === 1) {
+      setSteps(['']);
+    } else {
+      const newSteps = steps.filter((_, i) => i !== index);
+      setSteps(newSteps);
+    }
+  };
 
   const createPost = async () => {
-    if (!postText.trim()) {
+    if (!topic.trim()) {
+      Alert.alert("Notice", "Please enter a topic!");
+      return;
+    }
+
+    if (!description.trim()) {
       Alert.alert("Notice", "Please enter post content!");
       return;
     }
@@ -109,12 +144,8 @@ const CreatePostScreen = () => {
           },
         };
 
-        console.log('Uploading image with URI:', image);
         const response = await axios.post(`${baseUrl}/uploadImage`, formData, config);
-
         imageUrl = response.data.imageURL;
-      } else {
-        throw new Error('No image provided');
       }
 
       const config = {
@@ -125,24 +156,22 @@ const CreatePostScreen = () => {
       };
 
       const postData = {
-        title: topicText,
-        description: postText,
-        steps: stringToSteps(stepsText),
+        title: topic,
+        description: description,
+        steps: steps.filter(step => step.trim() !== ''),
         mainImage: imageUrl,
       };
-      const response = await axios.post(`${baseUrl}/posts`, postData, config);
 
-      const responseBody = response.data;
-      console.log('Response from backend:', responseBody);
-      Alert.alert('Tạo bài viết thành công');
-      setTopicText("");
-      setPostText('');
+      await axios.post(`${baseUrl}/posts`, postData, config);
+      Alert.alert('Success', 'Your post has been created successfully!');
+      setTopic('');
+      setDescription('');
       setImage(null);
+      setSteps(['']);
 
     } catch (error) {
-      console.error('Error creating post:', error.response?.data || error.message);
+      console.error('Error creating post:', error);
       Alert.alert('Error', 'Could not create post. Please try again!');
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -151,172 +180,155 @@ const CreatePostScreen = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { backgroundColor: colors.surfaceContainer }]}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton}>
-          <AntDesign name="close" size={24} color={colors.onSurface} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Tạo post mới</Text>
-      </View>
+      <ScrollView style={styles.content}>
+        {/* <View style={styles.header}>
+          <AntDesign name="book" size={24} color={theme.iconPrimary} />
+          <Text style={[styles.headerText, { color: theme.text }]}>Create New Post</Text>
+        </View> */}
 
-      <View style={styles.threadContainer}>
-        <View style={styles.userSection}>
-          <Image
-            source={userInfo.avatar ? { url: userInfo.avatar } : { uri: `https://ui-avatars.com/api/?name=${getInitials(userInfo.name)}&background=222&color=fff` }}
-            style={styles.userAvatar}
-          />
-          <View style={styles.threadLine} />
-        </View>
-        <View style={styles.contentSection}>
-          <View style={styles.userInfo}>
-            <Text style={[styles.username, { color: colors.onSurface }]}>{userInfo.username}</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setModalType("topic");
-                setIsModalVisible(true);
-              }}
-            >
-              <Text style={[styles.topicHint, { color: colors.onSurfaceVarient }]}>
-                Topic
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setModalType("steps");
-                setIsModalVisible(true);
-              }}
-            >
-              <Text style={[styles.topicHint, { color: colors.onSurfaceVarient }]}>
-                Cấu trúc
-              </Text>
-            </TouchableOpacity>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <FontAwesome5 name="heading" size={18} color={theme.iconPrimary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Chủ đề</Text>
           </View>
-
-          {showTopicInput && (
+          <View style={[styles.inputContainer, { 
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+            borderWidth: 1,
+          }]}>
             <TextInput
-              style={[styles.topicInput, { color: colors.onSurface }]}
-              placeholder="Nhập title..."
-              placeholderTextColor={colors.onSurfaceVarient}
-              value={topicText}
-              onChangeText={setTopicText}
+              style={[styles.input, { color: theme.text }]}
+              placeholder="Nhập chủ đề..."
+              placeholderTextColor={theme.textSecondary}
+              value={topic}
+              onChangeText={setTopic}
             />
-          )}
-
-          <TextInput
-            style={[styles.postInput, { color: colors.onSurface }]}
-            placeholder="Bạn muốn viết gì?"
-            placeholderTextColor={colors.onSurfaceVarient}
-            value={postText}
-            onChangeText={setPostText}
-            multiline
-            autoFocus
-          />
-
-          {image && (
-            <View style={styles.imagePreview}>
-              <Image source={{ uri: image }} style={styles.image} />
-              <TouchableOpacity onPress={() => setImage(null)}>
-                <Ionicons name="close-circle" size={24} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.mediaOptions}>
-            <TouchableOpacity style={styles.mediaButton} onPress={pickImage}>
-              <Ionicons name="image-outline" size={24} color={colors.onSurfaceVarient} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaButton}>
-              <Ionicons name="camera-outline" size={24} color={colors.onSurfaceVarient} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaButton}>
-              <Feather name="smile" size={24} color={colors.onSurfaceVarient} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaButton}>
-              <Ionicons name="mic-outline" size={24} color={colors.onSurfaceVarient} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaButton}>
-              <MaterialIcons name="format-list-bulleted" size={24} color={colors.onSurfaceVarient} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mediaButton}>
-              <Ionicons name="location-outline" size={24} color={colors.onSurfaceVarient} />
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-
-      <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: colors.onSurfaceVarient }]}>
-          Bất kỳ ai cũng có thể trả lời và trích dẫn
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.postButton,
-            { backgroundColor: postText.trim().length > 0 ? colors.primary : colors.surfaceContainerHigh }
-          ]}
-          disabled={postText.trim().length === 0}
-          onPress={createPost}
-        >
-          <Text
-            style={[
-              styles.postButtonText,
-              { color: postText.trim().length > 0 ? '#fff' : colors.onSurfaceVarient }
-            ]}
-          >
-            Đăng
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Thêm thử */}
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {modalType === "topic" ? "Nhập topic" : "Cấu trúc chia sẻ"}
-            </Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="description" size={20} color={theme.iconPrimary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Nội dung</Text>
+          </View>
+          <View style={[styles.inputContainer, { 
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+            borderWidth: 1,
+          }]}>
             <TextInput
-              style={styles.modalInput}
-              placeholder={modalType === "topic" ? "Topic" : "Cấu trúc ngữ pháp"}
-              placeholderTextColor="#999"
-              value={modalType === "topic" ? topicText : stepsText}
-              onChangeText={(text) =>
-                modalType === "topic" ? setTopicText(text) : setStepsText(text)
-              }
+              style={[styles.input, { color: theme.text }]}
+              placeholder="Chia sẻ kiến thức học tiếng Anh hoặc giải thích quy tắc ngữ pháp..."
+              placeholderTextColor={theme.textSecondary}
+              value={description}
+              onChangeText={setDescription}
               multiline
             />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => {
-                  setIsModalVisible(false);
-                }}
-              >
-                <Text style={styles.modalButtonText}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => {
-                  setIsModalVisible(false);
-                  if (modalType === "topic") {
-                    console.log("Topic:", topicText);
-                  } else {
-                    console.log("Steps:", stepsText);
-                  }
-                }}
-              >
-                <Text style={styles.modalButtonText}>Lưu</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
-      </Modal>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="bulb-outline" size={20} color={theme.iconPrimary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Các bước</Text>
+          </View>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Thêm các quy tắc ngữ pháp hoặc biểu thức tiếng Anh
+          </Text>
+
+          {steps.map((step, index) => (
+            <View key={index} style={styles.stepContainer}>
+              <View style={styles.stepNumberContainer}>
+                <Text style={styles.stepNumber}>{index + 1}</Text>
+              </View>
+              <View style={[styles.stepInputContainer, { 
+                backgroundColor: theme.surface,
+                borderColor: theme.border,
+                borderWidth: 1,
+              }]}>
+                <TextInput
+                  style={[styles.stepInput, { color: theme.text }]}
+                  placeholder="Nhập quy tắc ngữ pháp tiếng Anh hoặc mẹo..."
+                  placeholderTextColor={theme.textSecondary}
+                  value={step}
+                  onChangeText={(text) => updateStep(text, index)}
+                  multiline
+                />
+                <TouchableOpacity onPress={() => removeStep(index)} style={styles.removeButton}>
+                  <MaterialIcons name="close" size={20} color={theme.accent} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+
+          <TouchableOpacity onPress={addStep} style={styles.addButton}>
+            <AntDesign name="plus" size={16} color={theme.accent} />
+            <Text style={[styles.addButtonText, { color: theme.accent }]}>Thêm bước</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="image" size={20} color={theme.iconPrimary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Hình ảnh</Text>
+          </View>
+          <View style={styles.imageContainer}>
+            {image ? (
+              <View style={styles.selectedImageContainer}>
+                <Image source={{ uri: image }} style={styles.selectedImage} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setImage(null)}
+                >
+                  <MaterialIcons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.imageButtons}>
+                <TouchableOpacity
+                  style={[styles.imageButton, { 
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                    borderWidth: 1,
+                  }]}
+                  onPress={pickImage}
+                >
+                  <MaterialIcons name="photo-library" size={24} color={theme.iconPrimary} />
+                    <Text style={[styles.imageButtonText, { color: theme.text }]}>Chọn từ thư viện</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.imageButton, { 
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                    borderWidth: 1,
+                  }]}
+                  onPress={takePicture}
+                >
+                  <MaterialIcons name="camera-alt" size={24} color={theme.iconPrimary} />
+                  <Text style={[styles.imageButtonText, { color: theme.text }]}>Chụp ảnh</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.postButton, { opacity: loading ? 0.7 : 1 }]}
+          onPress={createPost}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="send" size={20} color="#fff" style={styles.postIcon} />
+              <Text style={styles.postButtonText}>Đăng bài viết</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -324,189 +336,184 @@ const CreatePostScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginBottom: 100,
+    paddingBottom: 80,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  closeButton: {
-    padding: 5,
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 12,
   },
-  headerTitle: {
+  section: {
+    marginBottom: 24,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#8a8783',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionTitle: {
     fontSize: 18,
-    fontFamily: "Inter-Bold",
-    textAlign: "center",
-    flex: 1,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
-  threadContainer: {
-    flex: 3,
-    flexDirection: 'row',
-    paddingTop: 20,
-    paddingHorizontal: 15,
-  },
-  userSection: {
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  topicInput: {
-    fontFamily: "Inter-Regular",
-    fontSize: 20,
-    padding: 10,
-    marginTop: 10,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  threadLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: 'rgba(150, 150, 150, 0.2)',
-    marginTop: 10,
-  },
-  contentSection: {
-    flex: 1,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
+  inputContainer: {
+    borderRadius: 12,
+    padding: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
     elevation: 5,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: "Inter-Bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  modalInput: {
-    fontFamily: "Inter-Regular",
+  input: {
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 20,
-    minHeight: 100,
-    textAlignVertical: "top",
+    minHeight: 40,
   },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  modalButton: {
-    flex: 1,
-    padding: 10,
-    marginHorizontal: 5,
-    backgroundColor: "#007BFF",
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  modalButtonText: {
-    fontFamily: "Inter-Bold",
+  subtitle: {
     fontSize: 14,
-    color: "#fff",
+    marginBottom: 16,
+    fontStyle: 'italic',
   },
-  username: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 14,
-  },
-  topicHint: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-  },
-  postInput: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    minHeight: 100,
-  },
-  mediaOptions: {
+  stepContainer: {
     flexDirection: 'row',
-    marginTop: 15,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  mediaButton: {
-    marginRight: 20,
+  stepNumberContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#BE0303',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    marginTop: 8,
   },
-  addThreadSection: {
+  stepNumber: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  stepInputContainer: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  stepInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingRight: 30,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  addButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  imageContainer: {
+    marginTop: 8,
+  },
+  imageButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  imageButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(150, 150, 150, 0.2)',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  smallAvatar: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    marginRight: 15,
-  },
-  addThreadText: {
-    fontFamily: 'Inter-Regular',
+  imageButtonText: {
+    marginLeft: 8,
     fontSize: 14,
+    fontWeight: '500',
   },
-  contentSection: {
-    flex: 1,
-    padding: 15,
+  selectedImageContainer: {
+    position: 'relative',
   },
-  postInput: {
-    fontFamily: "Inter-Regular",
-    fontSize: 16,
-    minHeight: 100,
-  },
-  mediaOptions: {
-    flexDirection: "row",
-    marginTop: 15,
-  },
-  mediaButton: {
-    marginRight: 20,
-  },
-  imagePreview: {
-    marginTop: 15,
-    alignItems: "center",
-  },
-  image: {
-    width: "100%",
+  selectedImage: {
+    width: '100%',
     height: 200,
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 15,
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+    padding: 4,
   },
   postButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    backgroundColor: '#BE0303',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 32,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5.46,
+    elevation: 9,
+  },
+  postIcon: {
+    marginRight: 8,
   },
   postButtonText: {
-    fontFamily: "Inter-Bold",
-    fontSize: 14,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
