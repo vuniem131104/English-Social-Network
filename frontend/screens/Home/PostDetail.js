@@ -314,13 +314,13 @@ const PostDetail = () => {
     const diffDay = Math.floor(diffHour / 24);
 
     if (diffDay > 0) {
-      return `${diffDay} days ago`;
+      return `${diffDay} ngày trước`;
     } else if (diffHour > 0) {
-      return `${diffHour} hours ago`;
+      return `${diffHour} giờ trước`;
     } else if (diffMin > 0) {
-      return `${diffMin} minutes ago`;
+      return `${diffMin} phút trước`;
     } else {
-      return 'Just now';
+      return 'Vừa mới';
     }
   };
 
@@ -340,7 +340,7 @@ const PostDetail = () => {
           <Text style={[styles.grammarText, { color: colors.onSurface }]}>{item}</Text>
           <TouchableOpacity style={styles.saveButton}>
             <FontAwesome name="bookmark-o" size={18} color={colors.primary} />
-            <Text style={[styles.saveButtonText, { color: colors.primary }]}>Save</Text>
+            <Text style={[styles.saveButtonText, { color: colors.primary }]}>Lưu</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -359,7 +359,7 @@ const PostDetail = () => {
         />
         <View style={styles.commentRightSection}>
           <Text style={[styles.commentAuthor, { color: colors.onSurface }]}>
-            {item.user?.username || item.user?.name || 'Anonymous'}
+            {item.user?.name || 'Anonymous'}
           </Text>
           
           <View style={[styles.commentContent]}>
@@ -504,7 +504,7 @@ const PostDetail = () => {
               />
               <View>
                 <Text style={[styles.username, { color: colors.onSurface }]}>
-                  {post.author?.username || post.author?.name || 'Anonymous'}
+                  {post.author?.name || 'Anonymous'}
                 </Text>
                 <Text style={[styles.timeAgo, { color: secondaryText }]}>{formatDate(post.createdAt)}</Text>
               </View>
@@ -516,7 +516,7 @@ const PostDetail = () => {
               <Text style={[styles.postTitle, { color: colors.onSurface }]}>{post.title}</Text>
               {isGrammarPost && (
                 <View style={[styles.topicBadge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.topicText}>Grammar</Text>
+                  <Text style={styles.topicText}>Ngữ pháp</Text>
                 </View>
               )}
             </View>
@@ -554,7 +554,7 @@ const PostDetail = () => {
             }]}>
               <View style={styles.sectionHeader}>
                 <MaterialIcons name="lightbulb" size={24} color={colors.primary} />
-                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Grammar Tips</Text>
+                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Mẹo ngữ pháp</Text>
               </View>
               <FlatList
                 data={post.steps}
@@ -914,8 +914,8 @@ const styles = StyleSheet.create({
   },
   postStats: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
+    gap: 10,
     paddingVertical: 15,
     borderTopWidth: 1,
     borderBottomWidth: 1,

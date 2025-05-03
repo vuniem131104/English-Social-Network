@@ -27,7 +27,7 @@ const CartScreen = () => {
 
   // Define theme-consistent colors
   const backgroundColor = isDarkMode ? '#121212' : colors.surface;
-  const cardBackground = isDarkMode ? '#1e1e1e' : '#f5f5f5';
+  const cardBackground = isDarkMode ? '#1e1e1e' : colors.surfaceContainerLow;
   const borderColor = isDarkMode ? 'rgba(160, 0, 0, 0.3)' : 'rgba(160, 0, 0, 0.2)';
   const textColor = isDarkMode ? '#ffffff' : colors.text;
   const secondaryText = isDarkMode ? '#c0c0c0' : '#777';

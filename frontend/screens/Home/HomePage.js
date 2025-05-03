@@ -77,13 +77,13 @@ const HomePage = () => {
     const diffDay = Math.floor(diffHour / 24);
 
     if (diffDay > 0) {
-      return `${diffDay} days ago`;
+      return `${diffDay} ngày trước`;
     } else if (diffHour > 0) {
-      return `${diffHour} hours ago`;
+      return `${diffHour} giờ trước`;
     } else if (diffMin > 0) {
-      return `${diffMin} minutes ago`;
+      return `${diffMin} phút trước`;
     } else {
-      return 'Just now';
+      return 'Vừa mới';
     }
   };
 
@@ -200,7 +200,7 @@ const HomePage = () => {
             />
             <View>
               <Text style={[styles.username, { color: colors.onSurface }]}>
-                {item.author?.username || item.author?.name || 'Anonymous'}
+                {item.author?.name || 'Anonymous'}
               </Text>
               <Text style={[styles.timeAgo, { color: isDarkMode ? '#aaa' : '#777' }]}>
                 {formatDate(item.createdAt)}
@@ -568,7 +568,8 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(150, 150, 150, 0.2)',
-    justifyContent: 'space-around',
+    gap: 15,
+    // justifyContent: 'space-around',
   },
   statItem: {
     flexDirection: 'row',
