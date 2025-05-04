@@ -20,7 +20,7 @@ import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 
 const HomePage = () => {
   const navigation = useNavigation();
-  const { userToken } = useContext(AuthContext);
+  const { userToken, userInfo } = useContext(AuthContext);
   const { colors } = useTheme();
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
 
@@ -29,36 +29,81 @@ const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Thêm test lấy post người theo dõi
+  const [isFollowingLoading, setIsFollowingLoading] = useState(false);
+  const [followingId, setFollowingId] = useState([]);
+
+
+  useEffect(() => {
+    if (userToken) {
+      fetchFollowing();
+    }
+  }, []);
   useEffect(() => {
     fetchPosts();
   }, [userToken, activeTab]);
 
-  const fetchPosts = async () => {
+  const sortPostsByUpdatedAt = (posts) => {
+    return posts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  };
+  const fetchFollowing = async () => {
+    try {
+      const config = userToken
+        ? { headers: { Authorization: `Bearer ${userToken}` } }
+        : {};
+      const response = await axios.get(`${baseUrl}/follows/following/${userInfo.id}`, config);
+      const uniqueIds = [...new Set(response.data.following.map(item => item.id))];
+      setFollowingId(uniqueIds);
+    } catch (error) {
+      console.error("Error fetching following:", error.message);
+    }
+  };
+
+  const fetchFollowingPosts = async () => {
     setIsLoading(true);
     try {
-      const config = userToken ? {
-        headers: { Authorization: `Bearer ${userToken}` }
-      } : {};
-      
-      // Change the endpoint based on the active tab
-      const endpoint = activeTab === 'following' && userToken ? 
-        `${baseUrl}/following/posts` : 
-        `${baseUrl}/newsfeed/1000`;
-      
-      const response = await axios.get(endpoint, config);
-      
-      if (Array.isArray(response.data)) {
-        setPosts(response.data);
-      } else {
-        console.error("Expected array but got:", typeof response.data);
-        setPosts([]);
+      const config = userToken
+        ? { headers: { Authorization: `Bearer ${userToken}` } }
+        : {};
+      const uniquePosts = [];
+      for (const id of followingId) {
+        const response = await axios.get(`${baseUrl}/profile/posts/${id}`, config);
+        response.data.forEach(post => {
+          uniquePosts.push(post);
+        });
       }
+      setPosts(uniquePosts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
     } catch (error) {
-      console.error("Error fetching posts:", error.message);
-      setPosts([]);
+      console.error("Error fetching following posts:", error.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const fetchPosts = async () => {
+    if (activeTab === 'following') {
+      fetchFollowingPosts();
+    } else {
+      setIsLoading(true);
+      try {
+        const config = userToken
+          ? { headers: { Authorization: `Bearer ${userToken}` } }
+          : {};
+        const response = await axios.get(`${baseUrl}/newsfeed/1000`, config);
+        if (Array.isArray(response.data)) {
+          setPosts(response.data);
+        } else {
+          console.error("Expected array but got:", typeof response.data);
+          setPosts([]);
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error.message);
+        setPosts([]);
+      } finally {
+        setIsLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -97,7 +142,7 @@ const HomePage = () => {
         message: `${post.title}\n\n${post.description}\n\nCheck out this English tip on English Social App!`,
         title: post.title,
       };
-      
+
       const result = await Share.share(shareContent);
     } catch (error) {
       Alert.alert("Error", "Unable to share this post. Please try again later.");
@@ -108,7 +153,7 @@ const HomePage = () => {
   const handleLikePost = async (post, index) => {
     if (!userToken) {
       Alert.alert(
-        "Đăng nhập", 
+        "Đăng nhập",
         "Bạn cần đăng nhập để thích bài viết",
         [
           { text: "Hủy", style: "cancel" },
@@ -122,11 +167,11 @@ const HomePage = () => {
       const config = {
         headers: { Authorization: `Bearer ${userToken}` }
       };
-      
+
       // Create a copy of posts for updating
       const updatedPosts = [...posts];
-      const currentPost = {...updatedPosts[index]};
-      
+      const currentPost = { ...updatedPosts[index] };
+
       if (!currentPost.isLiked) {
         try {
           const response = await axios.post(`${baseUrl}/like/${currentPost.id}`, {}, config);
@@ -160,11 +205,11 @@ const HomePage = () => {
           }
         }
       }
-      
+
       // Update the post in the array
       updatedPosts[index] = currentPost;
       setPosts(updatedPosts);
-      
+
     } catch (error) {
       console.error("Error updating like:", error.message);
       Alert.alert("Error", "Could not update like. Please try again later.");
@@ -174,29 +219,29 @@ const HomePage = () => {
   const renderItem = ({ item, index }) => {
     // Determine if the post contains English grammar tips
     const isGrammarPost = item.steps && item.steps.length > 0;
-    
+
     // Customize colors for dark mode
     const cardBackground = isDarkMode ? 'rgba(32, 32, 36, 0.9)' : colors.surfaceContainerLow;
     const cardBorder = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : colors.outlineVariant;
     const separatorColor = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : 'rgba(150, 150, 150, 0.2)';
     const tipBackground = isDarkMode ? 'rgba(40, 40, 45, 0.9)' : 'rgba(245, 245, 245, 0.1)';
-    
+
     return (
-      <TouchableOpacity 
-        style={[styles.postCard, { 
+      <TouchableOpacity
+        style={[styles.postCard, {
           backgroundColor: cardBackground,
           borderColor: cardBorder,
-        }]} 
+        }]}
         onPress={() => handlePostPress(item)}
       >
         <View style={styles.postContent}>
           <View style={styles.userInfo}>
-            <Image 
-              source={item.author?.avatar 
-                ? { uri: item.author.avatar } 
+            <Image
+              source={item.author?.avatar
+                ? { uri: item.author.avatar }
                 : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.author?.name || 'User')}` }
-              } 
-              style={styles.avatar} 
+              }
+              style={styles.avatar}
             />
             <View>
               <Text style={[styles.username, { color: colors.onSurface }]}>
@@ -207,7 +252,7 @@ const HomePage = () => {
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.contentHeader}>
             <Text style={[styles.postTitle, { color: colors.onSurface }]} numberOfLines={2}>
               {item.title}
@@ -218,39 +263,39 @@ const HomePage = () => {
               </View>
             )}
           </View>
-          
-          <Text 
+
+          <Text
             style={[
-              styles.postDescription, 
+              styles.postDescription,
               { color: isDarkMode ? 'rgba(220, 220, 225, 0.9)' : colors.onSurfaceVarient }
-            ]} 
+            ]}
             numberOfLines={3}
           >
             {item.description}
           </Text>
         </View>
-        
+
         {item.mainImage && (
           <View style={[styles.imageContainer, { borderColor: separatorColor }]}>
-            <Image 
-              source={{ uri: item.mainImage }} 
-              style={styles.postImage} 
+            <Image
+              source={{ uri: item.mainImage }}
+              style={styles.postImage}
               resizeMode="cover"
             />
           </View>
         )}
-        
+
         {isGrammarPost && (
           <View style={[
-            styles.tipPreview, 
-            { 
+            styles.tipPreview,
+            {
               borderTopColor: separatorColor,
               borderBottomColor: separatorColor,
               backgroundColor: tipBackground
             }
           ]}>
             <Text style={[styles.tipPreviewTitle, { color: colors.primary }]}>
-              <MaterialIcons name="lightbulb" size={18} color={colors.primary} /> 
+              <MaterialIcons name="lightbulb" size={18} color={colors.primary} />
               English Tip Preview:
             </Text>
             <Text style={[styles.tipPreviewContent, { color: colors.onSurface }]} numberOfLines={1}>
@@ -263,19 +308,19 @@ const HomePage = () => {
             )}
           </View>
         )}
-        
+
         <View style={[styles.postStats, { borderTopColor: separatorColor }]}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.statItem}
             onPress={(e) => {
               e.stopPropagation();
               handleLikePost(item, index);
             }}
           >
-            <Ionicons 
-              name={item.isLiked ? "heart" : "heart-outline"} 
-              size={20} 
-              color={item.isLiked ? "#BE0303" : isDarkMode ? '#bbb' : colors.onSurfaceVarient} 
+            <Ionicons
+              name={item.isLiked ? "heart" : "heart-outline"}
+              size={20}
+              color={item.isLiked ? "#BE0303" : isDarkMode ? '#bbb' : colors.onSurfaceVarient}
             />
             <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
               {item.totalLike || 0}
@@ -293,8 +338,8 @@ const HomePage = () => {
               {item.totalView || 0}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.statItem} 
+          <TouchableOpacity
+            style={styles.statItem}
             onPress={(e) => {
               e.stopPropagation();
               handleSharePost(item);
@@ -309,8 +354,8 @@ const HomePage = () => {
   };
 
   return (
-    <View style={[styles.container, { 
-      backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer 
+    <View style={[styles.container, {
+      backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer
     }]}>
       <FlatList
         data={posts}
@@ -329,35 +374,38 @@ const HomePage = () => {
         }
         ListHeaderComponent={
           <View>
-            
+
             {/* Tabs for For You and Following */}
             <View style={[styles.tabContainer, { borderBottomColor: colors.outlineVariant }]}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
-                  styles.tab, 
+                  styles.tab,
                   activeTab === 'forYou' ? [styles.activeTab, { borderBottomColor: colors.primary }] : {}
                 ]}
-                onPress={() => setActiveTab('forYou')}
+                onPress={() => {
+                  setActiveTab('forYou');
+                  setPosts([]); // Clear posts when switching tabs
+                }}
               >
-                <Text 
+                <Text
                   style={[
-                    styles.tabText, 
+                    styles.tabText,
                     { color: activeTab === 'forYou' ? colors.primary : colors.onSurfaceVarient }
                   ]}
                 >
                   Dành cho bạn
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[
-                  styles.tab, 
+                  styles.tab,
                   activeTab === 'following' ? [styles.activeTab, { borderBottomColor: colors.primary }] : {}
                 ]}
                 onPress={() => {
                   if (!userToken) {
                     Alert.alert(
-                      "Đăng nhập", 
+                      "Đăng nhập",
                       "Bạn cần đăng nhập để xem bài viết từ người dùng bạn đang theo dõi",
                       [
                         { text: "Hủy", style: "cancel" },
@@ -365,13 +413,16 @@ const HomePage = () => {
                       ]
                     );
                   } else {
-                    setActiveTab('following');
+                    {
+                      setActiveTab('following');
+                      setPosts([]); // Clear posts when switching tabs
+                    };
                   }
                 }}
               >
-                <Text 
+                <Text
                   style={[
-                    styles.tabText, 
+                    styles.tabText,
                     { color: activeTab === 'following' ? colors.primary : colors.onSurfaceVarient }
                   ]}
                 >
@@ -389,7 +440,7 @@ const HomePage = () => {
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={[
-                styles.emptyText, 
+                styles.emptyText,
                 { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }
               ]}>
                 {activeTab === 'following' ? 'Bạn chưa theo dõi ai hoặc họ chưa đăng bài' : 'Không có bài viết nào'}
@@ -439,7 +490,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    marginBottom: -0.5, 
+    marginBottom: -0.5,
   },
   tabText: {
     fontSize: 16,
