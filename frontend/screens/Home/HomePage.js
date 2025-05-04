@@ -239,7 +239,7 @@ const HomePage = () => {
             <Image
               source={item.author?.avatar
                 ? { uri: item.author.avatar }
-                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.author?.name || 'User')}` }
+                : { uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0` }
               }
               style={styles.avatar}
             />
@@ -259,7 +259,7 @@ const HomePage = () => {
             </Text>
             {isGrammarPost && (
               <View style={[styles.tagBadge, { backgroundColor: colors.primary }]}>
-                <Text style={styles.tagText}>Grammar</Text>
+                <Text style={styles.tagText}>Ngữ pháp</Text>
               </View>
             )}
           </View>
@@ -285,7 +285,7 @@ const HomePage = () => {
           </View>
         )}
 
-        {isGrammarPost && (
+        {/* {isGrammarPost && (
           <View style={[
             styles.tipPreview,
             {
@@ -307,7 +307,7 @@ const HomePage = () => {
               </Text>
             )}
           </View>
-        )}
+        )} */}
 
         <View style={[styles.postStats, { borderTopColor: separatorColor }]}>
           <TouchableOpacity

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Alert,
   Share,
@@ -22,7 +23,6 @@ import axios from "axios";
 import { baseUrl } from "../../services/api";
 import { AuthContext } from "../../context/authContext";
 import { Ionicons, Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { LinearGradient } from "expo-linear-gradient";
 
 const PostDetail = () => {
   const navigation = useNavigation();
@@ -52,6 +52,31 @@ const PostDetail = () => {
   const separatorColor = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : 'rgba(150, 150, 150, 0.2)';
   const secondaryText = isDarkMode ? '#aaa' : '#777';
   const commentBg = isDarkMode ? 'rgba(45, 45, 55, 0.8)' : 'rgba(150, 150, 150, 0.1)';
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // ...existing useEffects...
+
+  // Add keyboard listeners to adjust the UI when keyboard appears/disappears
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     getPostDetails();

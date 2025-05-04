@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { baseUrl } from "../services/api";
 import { AuthContext } from "../context/authContext";
 import axios from "axios";
-import { use } from "react";
+import CustomToast from "../components/CustomToast";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 // Placeholder data for search results
 const searchData = [
@@ -25,7 +26,7 @@ const searchData = [
     id: 100,
     username: "benbencogivui",
     name: "Bên Bên Có Gì Vui",
-    avatar: "https://ui-avatars.com/api/?name=BB",
+    avatar: null,
     totalFollowing: 120,
     totalFollowers: 46200
   },
@@ -33,7 +34,7 @@ const searchData = [
     id: 101,
     username: "ktln_thread",
     name: "KTLN",
-    avatar: "https://ui-avatars.com/api/?name=KT",
+    avatar: null,
     totalFollowing: 85,
     totalFollowers: 10300
   },
@@ -41,7 +42,7 @@ const searchData = [
     id: 102,
     username: "_vuniem_05",
     name: "LE HOANG VU",
-    avatar: "https://ui-avatars.com/api/?name=HV",
+    avatar: null,
     totalFollowing: 102,
     totalFollowers: 79
   },
@@ -49,7 +50,7 @@ const searchData = [
     id: 103,
     username: "ieltsfighter",
     name: "IELTS Fighter",
-    avatar: "https://ui-avatars.com/api/?name=IE",
+    avatar: null,
     totalFollowing: 45,
     totalFollowers: 20000
   },
@@ -57,7 +58,7 @@ const searchData = [
     id: 104,
     username: "_daiphatthanh",
     name: "Đài Phát Thanh.",
-    avatar: "https://ui-avatars.com/api/?name=DPT",
+    avatar: null,
     totalFollowing: 210,
     totalFollowers: 73100
   },
@@ -65,7 +66,7 @@ const searchData = [
     id: 105,
     username: "nguyenvanphuc",
     name: "NGUYEN VAN PHUC",
-    avatar: "https://ui-avatars.com/api/?name=NV",
+    avatar: null,
     totalFollowing: 102,
     totalFollowers: 79
   },
@@ -73,7 +74,7 @@ const searchData = [
     id: 106,
     username: "vanphuc",
     name: "NGUYEN VAN PHUC",
-    avatar: "https://ui-avatars.com/api/?name=NV",
+    avatar: null,
   }
 ];
 
@@ -82,15 +83,21 @@ const SearchScreen = () => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [ searchTerm, setSearchTerm ] = useState('');
+  const [ searchResults, setSearchResults ] = useState([]);
+  const [ loading, setLoading ] = useState(false);
+  const [ currentPage, setCurrentPage ] = useState(1);
+  const [ hasNextPage, setHasNextPage ] = useState(false);
+  const [ initialLoad, setInitialLoad ] = useState(true);
   const { userToken, userInfo } = useContext(AuthContext);
-  const [following, setFollowing] = useState([]);
-  const [loadingFollowers, setLoadingFollowers] = useState(false);
+  const [ following, setFollowing ] = useState([]);
+  const [ loadingFollowers, setLoadingFollowers ] = useState(false);
+  const [ toastVisible, setToastVisible ] = useState(false);
+  const [ toastMessage, setToastMessage ] = useState('');
+  const [ toastType, setToastType ] = useState('success');
+  const [ modalVisible, setModalVisible ] = useState(false);
+  const [ selectedUserId, setSelectedUserId ] = useState(null);
+  const [ selectedUsername, setSelectedUsername ] = useState("");
   useEffect(() => {
     fetchFollowing();
   }, []);
@@ -110,7 +117,7 @@ const SearchScreen = () => {
     }, 500);
 
     return () => clearTimeout(delaySearch);
-  }, [searchTerm]);
+  }, [ searchTerm ]);
   const getAllIds = (array) => {
     if (!Array.isArray(array)) {
       console.error("Input is not an array");
@@ -130,7 +137,7 @@ const SearchScreen = () => {
       if (page === 1) {
         setSearchResults(data.users || []);
       } else {
-        setSearchResults(prev => [...prev, ...(data.users || [])]);
+        setSearchResults(prev => [ ...prev, ...(data.users || []) ]);
       }
 
       setHasNextPage(data.nextPage || false);
@@ -156,8 +163,11 @@ const SearchScreen = () => {
 
       const response = await axios.post(`${baseUrl}/follows/${userId}`, {}, config);
       console.log("Follow response:", response.data);
-      Alert.alert("Thành công", "Theo dõi thành công!");
-      setFollowing(prev => [...prev, userId]);
+
+      setToastMessage("Theo dõi thành công!");
+      setToastType("success");
+      setToastVisible(true);
+      setFollowing(prev => [ ...prev, userId ]);
       setSearchResults((prevResults) =>
         prevResults.map((user) =>
           user.id === userId
@@ -167,6 +177,9 @@ const SearchScreen = () => {
       );
     } catch (error) {
       console.error("Error following user:", error.response?.data || error.message);
+      setToastMessage("Không thể theo dõi. Vui lòng thử lại.");
+      setToastType("error");
+      setToastVisible(true);
     }
   };
 
@@ -174,7 +187,9 @@ const SearchScreen = () => {
   const unfollowUser = async (userId) => {
     try {
       if (!userToken) {
-        Alert.alert("Lỗi", "Bạn cần đăng nhập để thực hiện hành động này.");
+        setToastMessage("Bạn cần đăng nhập để thực hiện hành động này.");
+        setToastType("error");
+        setToastVisible(true);
         return;
       }
 
@@ -185,7 +200,9 @@ const SearchScreen = () => {
         },
       };
       const response = await axios.delete(`${baseUrl}/follows/${userId}`, config);
-      Alert.alert("Thành công", "Bỏ theo dõi thành công!");
+      setToastMessage("Bỏ theo dõi thành công!");
+      setToastType("success");
+      setToastVisible(true);
       setFollowing((prev) => prev.filter((id) => id !== userId));
       setSearchResults((prevResults) =>
         prevResults.map((user) =>
@@ -196,7 +213,9 @@ const SearchScreen = () => {
       );
     } catch (error) {
       console.error("Error unfollowing user:", error.response?.data || error.message);
-      Alert.alert("Lỗi", "Không thể bỏ theo dõi. Vui lòng thử lại sau.");
+      setToastMessage("Không thể bỏ theo dõi. Vui lòng thử lại sau.");
+      setToastType("error");
+      setToastVisible(true);
     }
   };
 
@@ -222,25 +241,22 @@ const SearchScreen = () => {
   };
 
   // Hàm xử lý theo dõi hoặc bỏ theo dõi người dùng
-  const handleFollow = (userId) => {
+  const handleFollow = (userId, username) => {
     if (following.includes(userId)) {
-      Alert.alert(
-        "Bỏ theo dõi",
-        "Bạn có chắc chắn muốn bỏ theo dõi người dùng này không?",
-        [
-          { text: "Hủy", style: "cancel" },
-          {
-            text: "Đồng ý",
-            onPress: () => {
-              unfollowUser(userId);
-            },
-          },
-        ]
-      );
+      setSelectedUserId(userId);
+      setSelectedUsername(username);
+      setModalVisible(true);
     } else {
       followUser(userId);
     }
-  }
+  };
+
+  const handleConfirmUnfollow = () => {
+    if (selectedUserId) {
+      unfollowUser(selectedUserId);
+      setModalVisible(false);
+    }
+  };
 
   const loadMoreUsers = () => {
     if (hasNextPage && !loading) {
@@ -251,23 +267,37 @@ const SearchScreen = () => {
   const renderItem = ({ item }) => (
     <View style={styles.userContainer}>
       <Image
-        source={item.avatar ? { uri: item.avatar } : { uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}` }}
+        source={item.avatar ? { uri: item.avatar } : { uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0` }}
         style={styles.avatar}
       />
       <View style={styles.userInfo}>
-        <Text style={[styles.username, { color: colors.onSurface }]}>{item.username}</Text>
-        <Text style={[styles.displayName, { color: colors.onSurfaceVarient }]}>{item.name}</Text>
-        <Text style={[styles.followers, { color: colors.onSurfaceVarient }]}>{item.totalFollowers} người theo dõi</Text>
+        <Text style={[ styles.username, { color: colors.onSurface } ]}>{item.username}</Text>
+        <Text style={[ styles.displayName, { color: colors.onSurfaceVarient } ]}>{item.name}</Text>
+        <Text style={[ styles.followers, { color: colors.onSurfaceVarient } ]}>{item.totalFollowers} người theo dõi</Text>
       </View>
       {userInfo.id === item.id ? null : (<TouchableOpacity
-        style={[styles.followButton, { borderColor: colors.outline }]}
-        onPress={() => handleFollow(item.id)}
+        style={[
+          styles.followButton,
+          {
+            borderWidth: following.includes(item.id) ? 1 : 0,
+          },
+          {
+            backgroundColor: following.includes(item.id) ? 'transparent' : colors.primary,
+          }
+        ]}
+        onPress={() => handleFollow(item.id, item.username)}
       >
-        <Text style={[styles.followText, { color: colors.onSurface }]}>
+        <Text
+          style={[
+            styles.followText,
+            {
+              color: following.includes(item.id) ? colors.onSurface : '#FFFFFF'
+            }
+          ]}
+        >
           {following.includes(item.id) ? 'Đang theo dõi' : 'Theo dõi'}
         </Text>
       </TouchableOpacity>)}
-
     </View>
   );
 
@@ -281,15 +311,15 @@ const SearchScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
+    <View style={[ styles.container, { backgroundColor: colors.surfaceContainer } ]}>
       {/* <View style={styles.headerContainer}>
         <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Tìm kiếm</Text>
       </View> */}
 
-      <View style={[styles.searchContainer, { backgroundColor: colors.surfaceContainerLow }]}>
+      <View style={[ styles.searchContainer, { backgroundColor: colors.surfaceContainerLow } ]}>
         <Ionicons name="search" size={20} color={colors.onSurfaceVarient} />
         <TextInput
-          style={[styles.searchInput, { color: colors.onSurface }]}
+          style={[ styles.searchInput, { color: colors.onSurface } ]}
           placeholder="Tìm kiếm"
           placeholderTextColor={colors.onSurfaceVarient}
           value={searchTerm}
@@ -314,12 +344,25 @@ const SearchScreen = () => {
         ListEmptyComponent={
           searchTerm && !loading ? (
             <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: colors.onSurfaceVarient }]}>
+              <Text style={[ styles.emptyText, { color: colors.onSurfaceVarient } ]}>
                 Không tìm thấy người dùng nào
               </Text>
             </View>
           ) : null
         }
+      />
+      <CustomToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
+      <ConfirmationModal
+        visible={modalVisible}
+        title="Bỏ theo dõi"
+        message={`Bạn có chắc chắn muốn bỏ theo dõi ${selectedUsername} không?`}
+        onConfirm={handleConfirmUnfollow}
+        onCancel={() => setModalVisible(false)}
       />
     </View>
   );
@@ -371,7 +414,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: '#a0a0a0',
   },
   avatar: {
     width: 60,
@@ -400,7 +443,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 20,
-    borderWidth: 1,
   },
   followText: {
     fontFamily: 'Inter-Medium',

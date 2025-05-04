@@ -201,7 +201,7 @@ const NavbarTop = () => {
       
       <Pressable 
         onPress={() => { setIsModalVisible(true) }} 
-        style={[styles.iconContainer, { backgroundColor: colors.primary }]}
+        style={[styles.iconContainerr, { backgroundColor: colors.primary }]}
       >
         <Image
           contentFit="cover"
@@ -283,6 +283,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: Border.br_81xl,
     padding: Padding.p_8xs,
+    height: 35,
+    width: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  iconContainerr: {
+    flexDirection: "row",
+    paddingRight: 2,
+    borderRadius: Border.br_81xl,
     height: 35,
     width: 35,
     justifyContent: 'center',

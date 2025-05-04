@@ -769,11 +769,11 @@ const SettingsModal = ({ visible, onClose, colors }) => {
           
 
               {/* Phiên bản */}
-              <View style={styles.versionContainer}>
+              {/* <View style={styles.versionContainer}>
                 <Text style={[styles.versionText, { color: colors.onSurfaceVariant }]}>
                   Phiên bản 1.0.0
                 </Text>
-              </View>
+              </View> */}
             </View>
           </View>
         </Animated.View>
@@ -941,7 +941,7 @@ const SettingsMenu = ({ closeMenu }) => {
         </View>
       )}
       
-      <View style={styles.themeToggleContainer}>
+      {/* <View style={styles.themeToggleContainer}>
         <Text style={[styles.menuItemText, {color: colors.onSurface, marginBottom: 5}]}>
           {isDarkMode ? 'Chế độ tối' : 'Chế độ sáng'}
         </Text>
@@ -952,7 +952,7 @@ const SettingsMenu = ({ closeMenu }) => {
           onValueChange={toggleSwitch}
           value={isDarkMode}
         />
-      </View>
+      </View> */}
     </View>
   );
 };
@@ -991,6 +991,7 @@ const styles = StyleSheet.create({
   settingsMenu: {
     width: 237,
     padding: Padding.p_3xs,
+    paddingBottom: 20,
     justifyContent: "center",
     shadowOffset: {
       width: 1,

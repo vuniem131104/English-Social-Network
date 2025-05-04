@@ -240,9 +240,9 @@ const CreatePostScreen = ({ navigation }) => {
 
           {steps.map((step, index) => (
             <View key={index} style={styles.stepContainer}>
-              <View style={styles.stepNumberContainer}>
+              {/* <View style={styles.stepNumberContainer}>
                 <Text style={styles.stepNumber}>{index + 1}</Text>
-              </View>
+              </View> */}
               <View style={[styles.stepInputContainer, { 
                 backgroundColor: theme.surface,
                 borderColor: theme.border,
@@ -256,9 +256,9 @@ const CreatePostScreen = ({ navigation }) => {
                   onChangeText={(text) => updateStep(text, index)}
                   multiline
                 />
-                <TouchableOpacity onPress={() => removeStep(index)} style={styles.removeButton}>
+                {/* <TouchableOpacity onPress={() => removeStep(index)} style={styles.removeButton}>
                   <MaterialIcons name="close" size={20} color={theme.accent} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
           ))}
