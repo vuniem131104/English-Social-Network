@@ -12,11 +12,12 @@ import {
   Alert,
   RefreshControl
 } from "react-native";
-import { useTheme } from "@react-navigation/native";
+import { useTheme, useNavigation } from "@react-navigation/native";
 import { Ionicons, Feather } from '@expo/vector-icons';
 import axios from "axios";
 import { baseUrl } from "../services/api";
 import { AuthContext } from "../context/authContext";
+import PostDetail from "../screens/Home/PostDetail";
 
 // Placeholder data for activity feed
 const activityData = [
@@ -74,6 +75,7 @@ const activityData = [
 
 // Placeholder component cho favorites screen
 const FavoritesScreen = () => {
+  const navigation = useNavigation();
   const { colors } = useTheme();
   const { userToken, userInfo } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('posts');
@@ -121,6 +123,10 @@ const FavoritesScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchUserPosts();
+  };
+
+  const handlePostPress = (post) => {
+    navigation.navigate("PostDetail", { postId: post.id });
   };
 
   const renderActivityItem = ({ item }) => (
@@ -225,7 +231,10 @@ const FavoritesScreen = () => {
     const shareCount = Math.floor((item.id * 17) % 500);
 
     return (
-      <View style={[styles.postItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
+      <TouchableOpacity
+        style={[styles.postItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}
+        onPress={() => handlePostPress(item)}
+      >
         <View style={styles.activityHeader}>
           <View style={styles.userContainer}>
             <Image
@@ -285,14 +294,14 @@ const FavoritesScreen = () => {
             <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
       <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Hoạt động</Text>
+        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Activities</Text>
       </View>
 
       <View style={styles.tabsContainer}>
@@ -383,6 +392,7 @@ const FavoritesScreen = () => {
               renderItem={renderPostItem}
               keyExtractor={item => item.id.toString()}
               scrollEnabled={false}
+              contentContainerStyle={{ paddingBottom: 100 }}
             />
           ) : (
             <View style={styles.emptyContainer}>
@@ -425,6 +435,7 @@ const FavoritesStackScreen = () => {
   return (
     <FavoritesStack.Navigator screenOptions={{ headerShown: false }}>
       <FavoritesStack.Screen name="FavoritesScreen" component={FavoritesScreen} />
+      <FavoritesStack.Screen name="PostDetail" component={PostDetail} />
     </FavoritesStack.Navigator>
   );
 };
