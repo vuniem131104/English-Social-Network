@@ -48,6 +48,8 @@ const PostDetail = () => {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [repostCount, setRepostCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
 
   // Exercise feature states
   const [exerciseModalVisible, setExerciseModalVisible] = useState(false);
@@ -109,6 +111,17 @@ const PostDetail = () => {
     return unsubscribe;
   }, [navigation, postId]);
 
+  // Generate random counts that don't exceed view count
+  const generateRandomCounts = (viewCount) => {
+    if (!viewCount) return { repost: 0, share: 0 };
+
+    // Generate random numbers between 0 and viewCount
+    const repost = Math.floor(Math.random() * viewCount);
+    const share = Math.floor(Math.random() * viewCount);
+
+    return { repost, share };
+  };
+
   const getPostDetails = async () => {
     setLoading(true);
     try {
@@ -119,6 +132,12 @@ const PostDetail = () => {
       // Get post details with all information including like status if possible
       const response = await axios.get(`${baseUrl}/posts/${postId}`, config);
       setPost(response.data);
+
+      // Generate random repost and share counts
+      const viewCount = response.data.totalView || 0;
+      const { repost, share } = generateRandomCounts(viewCount);
+      setRepostCount(repost);
+      setShareCount(share);
 
       // Check if the post has isLiked field
       if (userToken) {
@@ -341,6 +360,12 @@ const PostDetail = () => {
     } catch (error) {
       Alert.alert("Error", "Could not share this post. Please try again later.");
     }
+  };
+
+  const handleRepostPress = () => {
+    // In a real app, this would handle the repost functionality
+    // For now, we'll just show an alert
+    Alert.alert("Repost", "Repost functionality would be implemented here");
   };
 
   const getAiAnalysis = async () => {
@@ -778,9 +803,17 @@ const PostDetail = () => {
                 {post.totalView || 0}
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.statItem} onPress={handleRepostPress}>
+              <Feather name="repeat" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
+              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+                {repostCount}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.statItem} onPress={handleSharePost}>
               <Feather name="share" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>Share</Text>
+              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+                {shareCount}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

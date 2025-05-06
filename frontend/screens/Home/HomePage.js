@@ -216,6 +216,17 @@ const HomePage = () => {
     }
   };
 
+  // Generate random counts that don't exceed view count
+  const generateRandomCounts = (viewCount) => {
+    if (!viewCount) return { repost: 0, share: 0 };
+
+    // Generate random numbers between 0 and viewCount
+    const repost = Math.floor(Math.random() * viewCount);
+    const share = Math.floor(Math.random() * viewCount);
+
+    return { repost, share };
+  };
+
   const renderItem = ({ item, index }) => {
     // Determine if the post contains English grammar tips
     const isGrammarPost = item.steps && item.steps.length > 0;
@@ -225,6 +236,10 @@ const HomePage = () => {
     const cardBorder = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : colors.outlineVariant;
     const separatorColor = isDarkMode ? 'rgba(70, 70, 80, 0.7)' : 'rgba(150, 150, 150, 0.2)';
     const tipBackground = isDarkMode ? 'rgba(40, 40, 45, 0.9)' : 'rgba(245, 245, 245, 0.1)';
+
+    // Generate random repost and share counts that don't exceed view count
+    const viewCount = item.totalView || 0;
+    const { repost, share } = generateRandomCounts(viewCount);
 
     return (
       <TouchableOpacity
@@ -342,13 +357,12 @@ const HomePage = () => {
             style={styles.statItem}
             onPress={(e) => {
               e.stopPropagation();
-              // Random repost count would be implemented here
               Alert.alert("Repost", "Repost functionality would be implemented here");
             }}
           >
             <Feather name="repeat" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
             <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
-              {Math.floor((item.id * 13) % 500)}
+              {repost}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -360,7 +374,7 @@ const HomePage = () => {
           >
             <Feather name="share" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
             <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
-              {Math.floor((item.id * 17) % 500)}
+              {share}
             </Text>
           </TouchableOpacity>
         </View>
