@@ -38,57 +38,30 @@ const HomePage = () => {
     fetchPosts();
   }, [userToken, activeTab]);
 
-
-
   const fetchPosts = async () => {
     setIsLoading(true);
-    const apiCall = activeTab === 'forYou' ? `${baseUrl}/newsfeed/100` : `${baseUrl}/newsfeedf/100`;
+    const apiCall = activeTab === 'forYou' ? `${baseUrl}/newsfeed/20` : `${baseUrl}/newsfeedf/20`;
 
     try {
       const config = userToken
         ? { headers: { Authorization: `Bearer ${userToken}` } }
         : {};
-      const uniquePosts = [];
-      for (const id of followingId) {
-        const response = await axios.get(`${baseUrl}/profile/posts/${id}`, config);
-        response.data.forEach(post => {
-          uniquePosts.push(post);
-        });
+      const response = await axios.get(apiCall, config);
+      if (Array.isArray(response.data)) {
+        setPosts(response.data);
+      } else {
+        console.error("Expected array but got:", typeof response.data);
+        setPosts([]);
       }
-      setPosts(uniquePosts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+
     } catch (error) {
-      console.error("Error fetching following posts:", error.message);
+      console.error("Error fetching posts:", error.message);
+      setPosts([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  };
-
-  const fetchPosts = async () => {
-    if (activeTab === 'following') {
-      fetchFollowingPosts();
-    } else {
-      setIsLoading(true);
-      try {
-        const config = userToken
-          ? { headers: { Authorization: `Bearer ${userToken}` } }
-          : {};
-        const response = await axios.get(`${baseUrl}/newsfeed/20`, config);
-        if (Array.isArray(response.data)) {
-          setPosts(response.data);
-        } else {
-          console.error("Expected array but got:", typeof response.data);
-          setPosts([]);
-        }
-      } catch (error) {
-        console.error("Error fetching posts:", error.message);
-        setPosts([]);
-      } finally {
-        setIsLoading(false);
-        setRefreshing(false);
-      }
-    }
-  };
+  }
 
   const onRefresh = () => {
     setRefreshing(true);
