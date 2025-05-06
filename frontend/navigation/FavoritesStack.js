@@ -128,7 +128,7 @@ const FavoritesScreen = () => {
       <View style={styles.activityHeader}>
         <View style={styles.userContainer}>
           <Image
-            source={{ uri: item.userAvatar }}
+            source={{ uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0` }}
             style={styles.userAvatar}
           />
           <View style={styles.userInfo}>
@@ -229,7 +229,7 @@ const FavoritesScreen = () => {
         <View style={styles.activityHeader}>
           <View style={styles.userContainer}>
             <Image
-              source={{ uri: item.author.avatar || `https://ui-avatars.com/api/?name=${item.author.name.charAt(0)}` }}
+              source={{ uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0` }}
               style={styles.userAvatar}
             />
             <View style={styles.userInfo}>
@@ -266,6 +266,13 @@ const FavoritesScreen = () => {
 
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
+              <Feather name="eye" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
               <Feather name="repeat" size={18} color={colors.onSurface} />
             </TouchableOpacity>
             <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
@@ -278,12 +285,6 @@ const FavoritesScreen = () => {
             <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
           </View>
 
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
-              <Feather name="eye" size={18} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
-          </View>
         </View>
       </View>
     );

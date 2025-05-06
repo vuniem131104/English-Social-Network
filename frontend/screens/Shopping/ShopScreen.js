@@ -504,7 +504,7 @@ const ShopScreen = () => {
       )}
       
       {/* Shopping Cart Button */}
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={[styles.cartButton, { backgroundColor: colors.primary }]}
         onPress={() => navigation.navigate('Cart')}
       >
@@ -516,7 +516,7 @@ const ShopScreen = () => {
             </Text>
           </View>
         )}
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </SafeAreaView>
   );
 };

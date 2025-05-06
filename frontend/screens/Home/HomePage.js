@@ -48,21 +48,47 @@ const HomePage = () => {
       const config = userToken
         ? { headers: { Authorization: `Bearer ${userToken}` } }
         : {};
-      const response = await axios.get(apiCall, config);
-      if (Array.isArray(response.data)) {
-        setPosts(response.data);
-      } else {
-        console.error("Expected array but got:", typeof response.data);
-        setPosts([]);
+      const uniquePosts = [];
+      for (const id of followingId) {
+        const response = await axios.get(`${baseUrl}/profile/posts/${id}`, config);
+        response.data.forEach(post => {
+          uniquePosts.push(post);
+        });
       }
+      setPosts(uniquePosts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
     } catch (error) {
-      console.error("Error fetching posts:", error.message);
-      setPosts([]);
+      console.error("Error fetching following posts:", error.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }
+  };
+
+  const fetchPosts = async () => {
+    if (activeTab === 'following') {
+      fetchFollowingPosts();
+    } else {
+      setIsLoading(true);
+      try {
+        const config = userToken
+          ? { headers: { Authorization: `Bearer ${userToken}` } }
+          : {};
+        const response = await axios.get(`${baseUrl}/newsfeed/20`, config);
+        if (Array.isArray(response.data)) {
+          setPosts(response.data);
+        } else {
+          console.error("Expected array but got:", typeof response.data);
+          setPosts([]);
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error.message);
+        setPosts([]);
+      } finally {
+        setIsLoading(false);
+        setRefreshing(false);
+      }
+    }
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -194,10 +220,7 @@ const HomePage = () => {
         <View style={styles.postContent}>
           <View style={styles.userInfo}>
             <Image
-              source={item.author?.avatar
-                ? { uri: item.author.avatar }
-                : { uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0` }
-              }
+              source={{ uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0` }}
               style={styles.avatar}
             />
             <View>

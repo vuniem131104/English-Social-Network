@@ -33,17 +33,17 @@ const PostDetail = () => {
   const { colors } = useTheme();
   const scrollViewRef = React.useRef(null);
 
-  const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMoreComments, setHasMoreComments] = useState(true);
-  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [isLoading, setLoading] = useState(false);
-  const [isCommentsLoading, setCommentsLoading] = useState(false);
-  const [isSubmitting, setSubmitting] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [ post, setPost ] = useState(null);
+  const [ comments, setComments ] = useState([]);
+  const [ currentPage, setCurrentPage ] = useState(1);
+  const [ hasMoreComments, setHasMoreComments ] = useState(true);
+  const [ isLoadingMoreComments, setIsLoadingMoreComments ] = useState(false);
+  const [ newComment, setNewComment ] = useState("");
+  const [ isLoading, setLoading ] = useState(false);
+  const [ isCommentsLoading, setCommentsLoading ] = useState(false);
+  const [ isSubmitting, setSubmitting ] = useState(false);
+  const [ liked, setLiked ] = useState(false);
+  const [ imageModalVisible, setImageModalVisible ] = useState(false);
 
   const darkBackground = isDarkMode ? '#121212' : colors.surfaceContainer;
   const cardBackground = isDarkMode ? 'rgba(32, 32, 36, 0.95)' : colors.surfaceContainerLow;
@@ -53,7 +53,7 @@ const PostDetail = () => {
   const secondaryText = isDarkMode ? '#aaa' : '#777';
   const commentBg = isDarkMode ? 'rgba(45, 45, 55, 0.8)' : 'rgba(150, 150, 150, 0.1)';
 
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [ keyboardVisible, setKeyboardVisible ] = useState(false);
 
   // ...existing useEffects...
 
@@ -81,7 +81,7 @@ const PostDetail = () => {
   useEffect(() => {
     getPostDetails();
     getComments(1, true);
-  }, [postId]);
+  }, [ postId ]);
 
   // Add a focus effect to update the post details when returning to this screen
   useEffect(() => {
@@ -93,7 +93,7 @@ const PostDetail = () => {
     });
 
     return unsubscribe;
-  }, [navigation, postId]);
+  }, [ navigation, postId ]);
 
   const getPostDetails = async () => {
     setLoading(true);
@@ -101,11 +101,11 @@ const PostDetail = () => {
       const config = userToken ? {
         headers: { Authorization: `Bearer ${userToken}` }
       } : {};
-      
+
       // Get post details with all information including like status if possible
       const response = await axios.get(`${baseUrl}/posts/${postId}`, config);
       setPost(response.data);
-      
+
       // Check if the post has isLiked field
       if (userToken) {
         if (response.data.hasOwnProperty('isLiked')) {
@@ -131,27 +131,27 @@ const PostDetail = () => {
     } else {
       setIsLoadingMoreComments(true);
     }
-    
+
     try {
       const config = userToken ? {
         headers: { Authorization: `Bearer ${userToken}` }
       } : {};
-      
+
       const response = await axios.get(`${baseUrl}/comment/${postId}/${page}`, config);
-      
+
       if (response.data && typeof response.data === 'object') {
         const { nextPage, comments: newComments } = response.data;
-        
+
         // Update comment list based on whether we're resetting or appending
         if (resetComments) {
           setComments(Array.isArray(newComments) ? newComments : []);
         } else {
           setComments(prevComments => [
-            ...prevComments, 
+            ...prevComments,
             ...(Array.isArray(newComments) ? newComments : [])
           ]);
         }
-        
+
         // Update pagination state
         setHasMoreComments(nextPage);
         setCurrentPage(page);
@@ -187,7 +187,7 @@ const PostDetail = () => {
     }
     if (!userToken) {
       Alert.alert(
-        "Đăng nhập", 
+        "Đăng nhập",
         "Bạn cần đăng nhập để bình luận",
         [
           { text: "Hủy", style: "cancel" },
@@ -202,19 +202,19 @@ const PostDetail = () => {
       const config = {
         headers: { Authorization: `Bearer ${userToken}` }
       };
-      
+
       const response = await axios.post(`${baseUrl}/comment/${postId}`, {
         content: newComment.trim()
       }, config);
-      
+
       if (response.data) {
         setNewComment("");
         getComments(1, true); // Reset and fetch first page after adding comment
         getPostDetails();
-        
+
         // Show success message
         Alert.alert("Thành công", "Bình luận của bạn đã được đăng");
-        
+
         // Scroll to bottom after a short delay to allow the new comment to load
         setTimeout(() => {
           if (scrollViewRef.current) {
@@ -227,7 +227,7 @@ const PostDetail = () => {
     } catch (error) {
       console.error("Error adding comment:", error.message);
       let errorMessage = "Không thể đăng bình luận. Vui lòng thử lại sau.";
-      
+
       if (error.response) {
         switch (error.response.status) {
           case 400:
@@ -244,7 +244,7 @@ const PostDetail = () => {
             break;
         }
       }
-      
+
       Alert.alert("Lỗi", errorMessage);
     } finally {
       setSubmitting(false);
@@ -261,7 +261,7 @@ const PostDetail = () => {
       const config = {
         headers: { Authorization: `Bearer ${userToken}` }
       };
-      
+
       if (!liked) {
         try {
           const response = await axios.post(`${baseUrl}/like/${postId}`, {}, config);
@@ -313,7 +313,7 @@ const PostDetail = () => {
         message: `${post.title}\n\n${post.description}\n\nCheck out this English learning tip on English Social App!`,
         title: post.title,
       };
-      
+
       const result = await Share.share(shareContent);
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
@@ -352,20 +352,20 @@ const PostDetail = () => {
   const renderGrammarPoint = ({ item, index }) => {
     return (
       <View style={[
-        styles.grammarItem, 
-        { 
+        styles.grammarItem,
+        {
           backgroundColor: isDarkMode ? 'rgba(45, 45, 55, 0.8)' : 'rgba(255, 255, 255, 0.1)',
           borderColor: borderColor
         }
       ]}>
-        <View style={[styles.grammarNumber, { backgroundColor: colors.primary }]}>
+        <View style={[ styles.grammarNumber, { backgroundColor: colors.primary } ]}>
           <Text style={styles.grammarNumberText}>{index + 1}</Text>
         </View>
         <View style={styles.grammarContent}>
-          <Text style={[styles.grammarText, { color: colors.onSurface }]}>{item}</Text>
+          <Text style={[ styles.grammarText, { color: colors.onSurface } ]}>{item}</Text>
           <TouchableOpacity style={styles.saveButton}>
             <FontAwesome name="bookmark-o" size={18} color={colors.primary} />
-            <Text style={[styles.saveButtonText, { color: colors.primary }]}>Lưu</Text>
+            <Text style={[ styles.saveButtonText, { color: colors.primary } ]}>Lưu</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -375,62 +375,59 @@ const PostDetail = () => {
   const renderComment = ({ item }) => {
     return (
       <View style={styles.commentItem}>
-        <Image 
-          source={item.user?.avatar 
-            ? { uri: item.user.avatar } 
-            : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.name || 'User')}` }
-          } 
-          style={[styles.commentAvatar, { borderColor: borderColor }]} 
+        <Image
+          source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.name || 'User')}` }}
+          style={[ styles.commentAvatar, { borderColor: borderColor } ]}
         />
         <View style={styles.commentRightSection}>
-          <Text style={[styles.commentAuthor, { color: colors.onSurface }]}>
+          <Text style={[ styles.commentAuthor, { color: colors.onSurface } ]}>
             {item.user?.name || 'Anonymous'}
           </Text>
-          
-          <View style={[styles.commentContent]}>
-            <Text style={[styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' }]}>
+
+          <View style={[ styles.commentContent ]}>
+            <Text style={[ styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' } ]}>
               {item.content}
             </Text>
           </View>
-          
+
           <View style={styles.commentActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.commentActionButton}
               onPress={() => handleLikeComment(item.id, item.isLiked)}
             >
-              <Ionicons 
-                name={item.isLiked ? "heart" : "heart-outline"} 
-                size={20} 
-                color={item.isLiked ? "#E53935" : isDarkMode ? '#AAA' : '#666'} 
+              <Ionicons
+                name={item.isLiked ? "heart" : "heart-outline"}
+                size={20}
+                color={item.isLiked ? "#E53935" : isDarkMode ? '#AAA' : '#666'}
               />
-              <Text style={[styles.actionText, { color: isDarkMode ? '#AAA' : '#666' }]}>
+              <Text style={[ styles.actionText, { color: isDarkMode ? '#AAA' : '#666' } ]}>
                 {item.totalLike || 0}
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.commentActionButton}>
               <Ionicons
                 name="chatbubble-outline"
                 size={18}
                 color={isDarkMode ? '#AAA' : '#666'}
               />
-              <Text style={[styles.actionText, { color: isDarkMode ? '#AAA' : '#666' }]}>
+              <Text style={[ styles.actionText, { color: isDarkMode ? '#AAA' : '#666' } ]}>
                 0
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.commentActionButton}>
               <Feather
                 name="share"
                 size={18}
                 color={isDarkMode ? '#AAA' : '#666'}
               />
-              <Text style={[styles.actionText, { color: isDarkMode ? '#AAA' : '#666' }]}>
+              <Text style={[ styles.actionText, { color: isDarkMode ? '#AAA' : '#666' } ]}>
                 0
               </Text>
             </TouchableOpacity>
-            
-            <Text style={[styles.commentTime, { color: secondaryText, marginLeft: 'auto' }]}>
+
+            <Text style={[ styles.commentTime, { color: secondaryText, marginLeft: 'auto' } ]}>
               {formatDate(item.createdAt)}
             </Text>
           </View>
@@ -449,7 +446,7 @@ const PostDetail = () => {
       const config = {
         headers: { Authorization: `Bearer ${userToken}` }
       };
-      
+
       if (!isLiked) {
         try {
           const response = await axios.post(`${baseUrl}/comment/${commentId}/like`, {}, config);
@@ -485,7 +482,7 @@ const PostDetail = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: darkBackground }]}>
+      <View style={[ styles.loadingContainer, { backgroundColor: darkBackground } ]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -493,76 +490,74 @@ const PostDetail = () => {
 
   if (!post) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: darkBackground }]}>
-        <Text style={[styles.errorText, { color: colors.onSurface }]}>Post not found</Text>
+      <View style={[ styles.loadingContainer, { backgroundColor: darkBackground } ]}>
+        <Text style={[ styles.errorText, { color: colors.onSurface } ]}>Post not found</Text>
       </View>
     );
   }
-  
+
   const isGrammarPost = post.steps && post.steps.length > 0;
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: darkBackground }]}
+      style={[ styles.container, { backgroundColor: darkBackground } ]}
     >
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.postContainer, { 
+        <View style={[ styles.postContainer, {
           backgroundColor: cardBackground,
-          borderColor: borderColor 
-        }]}>
-          <View style={[styles.postHeader, { borderBottomColor: borderColor }]}>
+          borderColor: borderColor
+        } ]}>
+          <View style={[ styles.postHeader, { borderBottomColor: borderColor } ]}>
             {/* <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <Ionicons name="arrow-back" size={24} color={colors.onSurface} />
             </TouchableOpacity> */}
             <View style={styles.userInfo}>
-              <Image 
-                source={post.author?.avatar 
-                  ? { uri: post.author.avatar } 
-                  : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.name || 'User')}` }
-                } 
-                style={[styles.avatar, { borderColor: borderColor }]} 
+              <Image
+                source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.name || 'User')}` }
+                }
+                style={[ styles.avatar, { borderColor: borderColor } ]}
               />
               <View>
-                <Text style={[styles.username, { color: colors.onSurface }]}>
+                <Text style={[ styles.username, { color: colors.onSurface } ]}>
                   {post.author?.name || 'Anonymous'}
                 </Text>
-                <Text style={[styles.timeAgo, { color: secondaryText }]}>{formatDate(post.createdAt)}</Text>
+                <Text style={[ styles.timeAgo, { color: secondaryText } ]}>{formatDate(post.createdAt)}</Text>
               </View>
             </View>
           </View>
-          
+
           <View style={styles.contentSection}>
             <View style={styles.titleContainer}>
-              <Text style={[styles.postTitle, { color: colors.onSurface }]}>{post.title}</Text>
+              <Text style={[ styles.postTitle, { color: colors.onSurface } ]}>{post.title}</Text>
               {isGrammarPost && (
-                <View style={[styles.topicBadge, { backgroundColor: colors.primary }]}>
+                <View style={[ styles.topicBadge, { backgroundColor: colors.primary } ]}>
                   <Text style={styles.topicText}>Ngữ pháp</Text>
                 </View>
               )}
             </View>
-            
+
             <Text style={[
-              styles.postDescription, 
+              styles.postDescription,
               { color: isDarkMode ? 'rgba(220, 220, 225, 0.9)' : colors.onSurface }
             ]}>
               {post.description}
             </Text>
           </View>
-          
+
           {post.mainImage && (
-            <View style={[styles.imageContainer, { borderColor: borderColor }]}>
-              <TouchableOpacity 
-                activeOpacity={0.9} 
+            <View style={[ styles.imageContainer, { borderColor: borderColor } ]}>
+              <TouchableOpacity
+                activeOpacity={0.9}
                 onPress={() => setImageModalVisible(true)}
               >
-                <Image 
-                  source={{ uri: post.mainImage }} 
-                  style={styles.postImage} 
+                <Image
+                  source={{ uri: post.mainImage }}
+                  style={styles.postImage}
                   resizeMode="cover"
                 />
                 <View style={styles.zoomIconContainer}>
@@ -571,15 +566,15 @@ const PostDetail = () => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           {isGrammarPost && (
-            <View style={[styles.section, { 
+            <View style={[ styles.section, {
               backgroundColor: sectionBackground,
               borderColor: borderColor
-            }]}>
+            } ]}>
               <View style={styles.sectionHeader}>
                 <MaterialIcons name="lightbulb" size={24} color={colors.primary} />
-                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Mẹo ngữ pháp</Text>
+                <Text style={[ styles.sectionTitle, { color: colors.onSurface } ]}>Mẹo ngữ pháp</Text>
               </View>
               <FlatList
                 data={post.steps}
@@ -590,51 +585,72 @@ const PostDetail = () => {
               />
             </View>
           )}
-          
-          <View style={[styles.postStats, { 
+
+          <View style={[ styles.postStats, {
             borderTopColor: separatorColor,
             borderBottomColor: separatorColor
-          }]}>
+          } ]}>
             <TouchableOpacity style={styles.statItem} onPress={handleLikePost}>
-              <Ionicons 
-                name={liked ? "heart" : "heart-outline"} 
-                size={24} 
-                color={liked ? "#BE0303" : isDarkMode ? '#bbb' : colors.onSurface} 
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={24}
+                color={liked ? "#BE0303" : isDarkMode ? '#bbb' : colors.onSurface}
               />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface } ]}>
                 {post.totalLike || 0}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
               <Ionicons name="chatbubble-outline" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface } ]}>
                 {post.totalComment || 0}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
               <Feather name="eye" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface } ]}>
                 {post.totalView || 0}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.statItem} onPress={handleSharePost}>
-              <Feather name="share" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>Share</Text>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={(e) => {
+                e.stopPropagation();
+                // Random repost count would be implemented here
+                Alert.alert("Repost", "Repost functionality would be implemented here");
+              }}
+            >
+              <Feather name="repeat" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient } ]}>
+                {Math.floor((post.id * 13) % 500)}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleSharePost(post);
+              }}
+            >
+              <Feather name="share" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient } ]}>
+                {Math.floor((post.id * 17) % 500)}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
-        
-        <View style={[styles.commentsSection, { 
+
+        <View style={[ styles.commentsSection, {
           backgroundColor: cardBackground,
           borderColor: borderColor
-        }]}>
+        } ]}>
           <View style={styles.commentsHeader}>
-            <Text style={[styles.commentsTitle, { color: colors.onSurface }]}>Bình luận</Text>
-            <Text style={[styles.commentsCount, { color: secondaryText }]}>
+            <Text style={[ styles.commentsTitle, { color: colors.onSurface } ]}>Bình luận</Text>
+            <Text style={[ styles.commentsCount, { color: secondaryText } ]}>
               {post.totalComment > 0 ? `${post.totalComment} bình luận` : 'Chưa có bình luận nào'}
             </Text>
           </View>
-          
+
           {isCommentsLoading ? (
             <ActivityIndicator size="small" color={colors.primary} style={styles.commentLoader} />
           ) : comments.length > 0 ? (
@@ -646,13 +662,13 @@ const PostDetail = () => {
                 scrollEnabled={false}
                 ItemSeparatorComponent={() => <View style={{ height: 15 }} />}
               />
-              
+
               {hasMoreComments && (
-                <TouchableOpacity 
-                  style={[styles.loadMoreButton, { 
+                <TouchableOpacity
+                  style={[ styles.loadMoreButton, {
                     borderColor: borderColor,
                     backgroundColor: isDarkMode ? 'rgba(50, 50, 60, 0.5)' : 'rgba(240, 240, 245, 0.5)'
-                  }]} 
+                  } ]}
                   onPress={loadMoreComments}
                   disabled={isLoadingMoreComments}
                 >
@@ -660,7 +676,7 @@ const PostDetail = () => {
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <>
-                      <Text style={[styles.loadMoreButtonText, { color: colors.primary }]}>
+                      <Text style={[ styles.loadMoreButtonText, { color: colors.primary } ]}>
                         Xem thêm bình luận
                       </Text>
                       <Ionicons name="chevron-down" size={16} color={colors.primary} />
@@ -671,12 +687,12 @@ const PostDetail = () => {
             </>
           ) : (
             <View style={styles.noCommentsContainer}>
-              <Ionicons 
-                name="chatbubble-ellipses-outline" 
-                size={40} 
-                color={isDarkMode ? 'rgba(100, 100, 120, 0.5)' : 'rgba(180, 180, 190, 0.5)'} 
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={40}
+                color={isDarkMode ? 'rgba(100, 100, 120, 0.5)' : 'rgba(180, 180, 190, 0.5)'}
               />
-              <Text style={[styles.noCommentsText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
+              <Text style={[ styles.noCommentsText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient } ]}>
                 Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
               </Text>
             </View>
@@ -684,29 +700,31 @@ const PostDetail = () => {
         </View>
 
         {/* Comment Input Section */}
-        <View style={[styles.commentInputContainer, { 
+        <View style={[ styles.commentInputContainer, {
           backgroundColor: cardBackground,
           borderColor: borderColor
-        }]}>
+        } ]}>
           <TextInput
-            style={[styles.commentInput, { 
-              color: colors.onSurface, 
+            style={[ styles.commentInput, {
+              color: colors.onSurface,
               backgroundColor: isDarkMode ? 'rgba(40, 40, 45, 0.9)' : colors.surfaceContainerLow,
               borderColor: borderColor
-            }]}
+            } ]}
             placeholder="Viết bình luận..."
             placeholderTextColor={isDarkMode ? '#888' : colors.onSurfaceVarient}
             value={newComment}
             onChangeText={setNewComment}
             multiline
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.sendButton, 
-              {backgroundColor: isSubmitting
-                ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh) 
-                : colors.primary}
-            ]} 
+              styles.sendButton,
+              {
+                backgroundColor: isSubmitting
+                  ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh)
+                  : colors.primary
+              }
+            ]}
             onPress={handleAddComment}
             disabled={!newComment.trim() || isSubmitting}
           >
@@ -718,7 +736,7 @@ const PostDetail = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      
+
       {/* Image Modal */}
       <Modal
         animationType="fade"
@@ -726,8 +744,8 @@ const PostDetail = () => {
         visible={imageModalVisible}
         onRequestClose={() => setImageModalVisible(false)}
       >
-        <Pressable 
-          style={styles.imageModalContainer} 
+        <Pressable
+          style={styles.imageModalContainer}
           onPress={() => setImageModalVisible(false)}
         >
           <Image
@@ -735,7 +753,7 @@ const PostDetail = () => {
             style={styles.fullScreenImage}
             resizeMode="contain"
           />
-          
+
         </Pressable>
       </Modal>
     </KeyboardAvoidingView>
@@ -754,7 +772,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    marginBottom: 60, 
+    marginBottom: 60,
   },
   errorText: {
     fontSize: 16,
@@ -940,7 +958,7 @@ const styles = StyleSheet.create({
   postStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     paddingVertical: 15,
     borderTopWidth: 1,
     borderBottomWidth: 1,

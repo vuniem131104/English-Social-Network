@@ -267,7 +267,7 @@ const SearchScreen = () => {
   const renderItem = ({ item }) => (
     <View style={styles.userContainer}>
       <Image
-        source={item.avatar ? { uri: item.avatar } : { uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0` }}
+        source={{ uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0` }}
         style={styles.avatar}
       />
       <View style={styles.userInfo}>
