@@ -35,77 +35,34 @@ const HomePage = () => {
 
 
   useEffect(() => {
-    if (userToken) {
-      fetchFollowing();
-    }
-  }, []);
-  useEffect(() => {
     fetchPosts();
   }, [userToken, activeTab]);
 
-  const sortPostsByUpdatedAt = (posts) => {
-    return posts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  };
-  const fetchFollowing = async () => {
-    try {
-      const config = userToken
-        ? { headers: { Authorization: `Bearer ${userToken}` } }
-        : {};
-      const response = await axios.get(`${baseUrl}/follows/following/${userInfo.id}`, config);
-      const uniqueIds = [...new Set(response.data.following.map(item => item.id))];
-      setFollowingId(uniqueIds);
-    } catch (error) {
-      console.error("Error fetching following:", error.message);
-    }
-  };
 
-  const fetchFollowingPosts = async () => {
+
+  const fetchPosts = async () => {
     setIsLoading(true);
+    const apiCall = activeTab === 'forYou' ? `${baseUrl}/newsfeed/100` : `${baseUrl}/newsfeedf/100`;
+
     try {
       const config = userToken
         ? { headers: { Authorization: `Bearer ${userToken}` } }
         : {};
-      const uniquePosts = [];
-      for (const id of followingId) {
-        const response = await axios.get(`${baseUrl}/profile/posts/${id}`, config);
-        response.data.forEach(post => {
-          uniquePosts.push(post);
-        });
+      const response = await axios.get(apiCall, config);
+      if (Array.isArray(response.data)) {
+        setPosts(response.data);
+      } else {
+        console.error("Expected array but got:", typeof response.data);
+        setPosts([]);
       }
-      setPosts(uniquePosts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
     } catch (error) {
-      console.error("Error fetching following posts:", error.message);
+      console.error("Error fetching posts:", error.message);
+      setPosts([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  };
-
-  const fetchPosts = async () => {
-    if (activeTab === 'following') {
-      fetchFollowingPosts();
-    } else {
-      setIsLoading(true);
-      try {
-        const config = userToken
-          ? { headers: { Authorization: `Bearer ${userToken}` } }
-          : {};
-        const response = await axios.get(`${baseUrl}/newsfeed/1000`, config);
-        if (Array.isArray(response.data)) {
-          setPosts(response.data);
-        } else {
-          console.error("Expected array but got:", typeof response.data);
-          setPosts([]);
-        }
-      } catch (error) {
-        console.error("Error fetching posts:", error.message);
-        setPosts([]);
-      } finally {
-        setIsLoading(false);
-        setRefreshing(false);
-      }
-    }
-  };
+  }
 
   const onRefresh = () => {
     setRefreshing(true);
