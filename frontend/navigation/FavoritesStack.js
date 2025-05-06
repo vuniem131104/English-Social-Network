@@ -1,17 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { 
-  Text, 
-  View, 
+import {
+  Text,
+  View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
-  FlatList
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  RefreshControl
 } from "react-native";
-import { useSelector } from "react-redux";
 import { useTheme } from "@react-navigation/native";
 import { Ionicons, Feather } from '@expo/vector-icons';
+import axios from "axios";
+import { baseUrl } from "../services/api";
+import { AuthContext } from "../context/authContext";
 
 // Placeholder data for activity feed
 const activityData = [
@@ -69,20 +74,65 @@ const activityData = [
 
 // Placeholder component cho favorites screen
 const FavoritesScreen = () => {
-  const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState('all');
-  
+  const { userToken, userInfo } = useContext(AuthContext);
+  const [activeTab, setActiveTab] = useState('posts');
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Default user ID if not logged in
+  const defaultUserId = 6; // Using vugiau user ID from the example
+
+  useEffect(() => {
+    fetchUserPosts();
+  }, [userToken]);
+
+  const fetchUserPosts = async () => {
+    setLoading(true);
+    try {
+      // Determine which user ID to use
+      const userId = userInfo?.id || defaultUserId;
+
+      // Set up headers with token if available
+      const config = userToken ? {
+        headers: { Authorization: `Bearer ${userToken}` }
+      } : {};
+
+      // Fetch posts from the API
+      const response = await axios.get(`${baseUrl}/profile/posts/${userId}`, config);
+
+      if (Array.isArray(response.data)) {
+        setPosts(response.data);
+      } else {
+        console.error("Expected array but got:", typeof response.data);
+        setPosts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching user posts:", error.message);
+      Alert.alert("Error", "Could not load posts. Please try again later.");
+      setPosts([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchUserPosts();
+  };
+
   const renderActivityItem = ({ item }) => (
     <View style={[styles.activityItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
       <View style={styles.activityHeader}>
         <View style={styles.userContainer}>
-          <Image 
-            source={{ uri: item.userAvatar }} 
-            style={styles.userAvatar} 
+          <Image
+            source={{ uri: item.userAvatar }}
+            style={styles.userAvatar}
           />
           <View style={styles.userInfo}>
-            <Text style={[styles.username, { color: colors.onSurface }]}>{item.username}</Text>
+            <Text style={[styles.username, { color: colors.onSurface }]}>{item.name}</Text>
             <Text style={[styles.timeAgo, { color: colors.onSurfaceVarient }]}>{item.timeAgo}</Text>
             {item.isForYou && (
               <Text style={[styles.forYouTag, { color: colors.onSurfaceVarient }]}>Được chọn cho bạn</Text>
@@ -93,9 +143,9 @@ const FavoritesScreen = () => {
           <Feather name="more-horizontal" size={20} color={colors.onSurfaceVarient} />
         </TouchableOpacity>
       </View>
-      
-      <Text style={[styles.postContent, { color: colors.onSurface }]}>{item.content}</Text>
-      
+
+      <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.content}</Text>
+
       <View style={styles.postStats}>
         <View style={styles.statItem}>
           <TouchableOpacity style={styles.statButton}>
@@ -103,14 +153,14 @@ const FavoritesScreen = () => {
           </TouchableOpacity>
           <Text style={[styles.statText, { color: colors.onSurface }]}>{item.likes}</Text>
         </View>
-        
+
         <View style={styles.statItem}>
           <TouchableOpacity style={styles.statButton}>
             <Ionicons name="chatbubble-outline" size={22} color={colors.onSurface} />
           </TouchableOpacity>
           <Text style={[styles.statText, { color: colors.onSurface }]}>{item.comments}</Text>
         </View>
-        
+
         {item.shares && (
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
@@ -119,7 +169,7 @@ const FavoritesScreen = () => {
             <Text style={[styles.statText, { color: colors.onSurface }]}>{item.shares}</Text>
           </View>
         )}
-        
+
         {item.views && (
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
@@ -129,7 +179,7 @@ const FavoritesScreen = () => {
           </View>
         )}
       </View>
-      
+
       {item.type === 'previous' && item.id === '2' && (
         <View style={[styles.viewMoreContainer, { backgroundColor: colors.surfaceContainerLow }]}>
           <Text style={[styles.viewMoreText, { color: colors.onSurface }]}>
@@ -147,102 +197,224 @@ const FavoritesScreen = () => {
       )}
     </View>
   );
-  
+
+  const renderPostItem = ({ item }) => {
+    // Format the date to display like in the image
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+        if (diffHours === 0) {
+          const diffMinutes = Math.floor(diffTime / (1000 * 60));
+          return `${diffMinutes} phút`;
+        }
+        return `${diffHours} giờ`;
+      } else if (diffDays === 1) {
+        return '1 ngày';
+      } else {
+        return `${diffDays} ngày`;
+      }
+    };
+
+    // Generate random values for repost and share counts based on post ID for consistency
+    const repostCount = Math.floor((item.id * 13) % 500);
+    const shareCount = Math.floor((item.id * 17) % 500);
+
+    return (
+      <View style={[styles.postItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
+        <View style={styles.activityHeader}>
+          <View style={styles.userContainer}>
+            <Image
+              source={{ uri: item.author.avatar || `https://ui-avatars.com/api/?name=${item.author.name.charAt(0)}` }}
+              style={styles.userAvatar}
+            />
+            <View style={styles.userInfo}>
+              <Text style={[styles.username, { color: colors.onSurface }]}>{item.author.name}</Text>
+              <View style={styles.timeContainer}>
+                <Text style={[styles.timeAgo, { color: colors.onSurfaceVarient }]}>
+                  {formatDate(item.createdAt)}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.moreButton}>
+            <Feather name="more-horizontal" size={18} color={colors.onSurfaceVarient} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.title}</Text>
+        <Text style={[styles.postDescription, { color: colors.onSurfaceVarient }]}>{item.description}</Text>
+
+        <View style={styles.postStats}>
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Ionicons name="heart-outline" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalLike || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Ionicons name="chatbubble-outline" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalComment || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="repeat" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="upload" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="eye" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
       <View style={styles.headerContainer}>
         <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Hoạt động</Text>
       </View>
-      
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
-        <TouchableOpacity 
+
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
           style={[
-            styles.tabButton, 
+            styles.tabButton,
             activeTab === 'all' && [styles.activeTabButton, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('all')}
         >
-          <Text 
+          <Text
             style={[
-              styles.tabText, 
+              styles.tabText,
               { color: activeTab === 'all' ? colors.onSurface : colors.onSurfaceVarient }
             ]}
           >
             Tất cả
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
-            styles.tabButton, 
+            styles.tabButton,
             activeTab === 'follows' && [styles.activeTabButton, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('follows')}
         >
-          <Text 
+          <Text
             style={[
-              styles.tabText, 
+              styles.tabText,
               { color: activeTab === 'follows' ? colors.onSurface : colors.onSurfaceVarient }
             ]}
           >
             Lượt theo dõi
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
-            styles.tabButton, 
-            activeTab === 'replies' && [styles.activeTabButton, { borderBottomColor: colors.primary }]
+            styles.tabButton,
+            activeTab === 'posts' && [styles.activeTabButton, { borderBottomColor: colors.primary }]
           ]}
-          onPress={() => setActiveTab('replies')}
+          onPress={() => setActiveTab('posts')}
         >
-          <Text 
+          <Text
             style={[
-              styles.tabText, 
-              { color: activeTab === 'replies' ? colors.onSurface : colors.onSurfaceVarient }
+              styles.tabText,
+              { color: activeTab === 'posts' ? colors.onSurface : colors.onSurfaceVarient }
             ]}
           >
-            Thread trả lời
+            Bài viết
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
-            styles.tabButton, 
+            styles.tabButton,
             activeTab === 'mentions' && [styles.activeTabButton, { borderBottomColor: colors.primary }]
           ]}
           onPress={() => setActiveTab('mentions')}
         >
-          <Text 
+          <Text
             style={[
-              styles.tabText, 
+              styles.tabText,
               { color: activeTab === 'mentions' ? colors.onSurface : colors.onSurfaceVarient }
             ]}
           >
             Lượt nhắc đến
           </Text>
         </TouchableOpacity>
-      </ScrollView>
-      
-      <View style={styles.sectionContainer}>
-        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Mới</Text>
-        <FlatList
-          data={activityData.filter(item => item.type === 'new')}
-          renderItem={renderActivityItem}
-          keyExtractor={item => item.id}
-          scrollEnabled={false}
-        />
       </View>
-      
-      <View style={styles.sectionContainer}>
-        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Trước</Text>
-        <FlatList
-          data={activityData.filter(item => item.type === 'previous')}
-          renderItem={renderActivityItem}
-          keyExtractor={item => item.id}
-          scrollEnabled={false}
-        />
-      </View>
+
+      {activeTab === 'posts' ? (
+        <ScrollView
+          style={styles.postsContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {loading && posts.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.onSurface }]}>Đang tải bài viết...</Text>
+            </View>
+          ) : posts.length > 0 ? (
+            <FlatList
+              data={posts}
+              renderItem={renderPostItem}
+              keyExtractor={item => item.id.toString()}
+              scrollEnabled={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: colors.onSurface }]}>
+                Không có bài viết nào
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      ) : (
+        <>
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Mới</Text>
+            <FlatList
+              data={activityData.filter(item => item.type === 'new')}
+              renderItem={renderActivityItem}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+            />
+          </View>
+
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Trước</Text>
+            <FlatList
+              data={activityData.filter(item => item.type === 'previous')}
+              renderItem={renderActivityItem}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+            />
+          </View>
+        </>
+      )}
     </View>
   );
 };
@@ -263,27 +435,32 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 10,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
   },
   tabsContainer: {
     flexDirection: 'row',
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
   },
   tabButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    flex: 1,
+    alignItems: 'center',
   },
   activeTabButton: {
     borderBottomWidth: 2,
   },
   tabText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 15,
+    fontSize: 13,
+    textAlign: 'center',
   },
   sectionContainer: {
     marginTop: 15,
@@ -301,56 +478,72 @@ const styles = StyleSheet.create({
   },
   activityHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 6,
+    position: 'relative',
+    paddingRight: 30,
+  },
+  moreButton: {
+    marginRight: 20,
+    position: 'absolute',
+    right: 0,
   },
   userContainer: {
     flexDirection: 'row',
   },
   userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 8,
   },
   userInfo: {
     flex: 1,
   },
   username: {
     fontFamily: 'Inter-Bold',
-    fontSize: 14,
-    marginBottom: 2,
+    fontSize: 13,
+    marginBottom: 1,
   },
   timeAgo: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 11,
   },
   forYouTag: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 11,
+    marginTop: 1,
   },
-  postContent: {
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  postTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 17,
+    marginBottom: 4,
+  },
+  postDescription: {
     fontFamily: 'Inter-Regular',
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 15,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+    color: '#666',
   },
   postStats: {
     flexDirection: 'row',
   },
   statItem: {
     flexDirection: 'row',
-    marginRight: 20,
+    marginRight: 12,
     alignItems: 'center',
   },
   statButton: {
-    marginRight: 4,
+    marginRight: 3,
   },
   statText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
   },
   viewMoreContainer: {
     marginTop: 15,
@@ -377,7 +570,54 @@ const styles = StyleSheet.create({
   viewMoreButtonText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
+  },
+  // New styles for posts
+  postsContainer: {
+    flex: 1,
+  },
+  postItem: {
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  // This style is already defined above
+  postImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginVertical: 10,
+  },
+  stepsContainer: {
+    marginVertical: 10,
+    paddingLeft: 5,
+  },
+  stepText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  loadingText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    marginTop: 10,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  emptyText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
   }
 });
 
-export default FavoritesStackScreen; 
+export default FavoritesStackScreen;

@@ -342,11 +342,26 @@ const HomePage = () => {
             style={styles.statItem}
             onPress={(e) => {
               e.stopPropagation();
+              // Random repost count would be implemented here
+              Alert.alert("Repost", "Repost functionality would be implemented here");
+            }}
+          >
+            <Feather name="repeat" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
+            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
+              {Math.floor((item.id * 13) % 500)}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.statItem}
+            onPress={(e) => {
+              e.stopPropagation();
               handleSharePost(item);
             }}
           >
             <Feather name="share" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
-            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>Share</Text>
+            <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient }]}>
+              {Math.floor((item.id * 17) % 500)}
+            </Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -619,19 +634,19 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: 'rgba(150, 150, 150, 0.2)',
-    gap: 15,
-    // justifyContent: 'space-around',
+    gap: 10,
+    justifyContent: 'space-between',
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 2,
   },
   statText: {
-    marginLeft: 5,
-    fontSize: 14,
+    marginLeft: 4,
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
   },
 });
 
-export default HomePage; 
+export default HomePage;
