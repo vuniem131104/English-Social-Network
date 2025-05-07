@@ -22,7 +22,7 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 import { baseUrl } from "../../services/api";
 import { AuthContext } from "../../context/authContext";
-import { Ionicons, Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons, Feather, MaterialIcons, FontAwesome, AntDesign } from '@expo/vector-icons';
 
 const PostDetail = () => {
   const navigation = useNavigation();
@@ -33,17 +33,33 @@ const PostDetail = () => {
   const { colors } = useTheme();
   const scrollViewRef = React.useRef(null);
 
-  const [ post, setPost ] = useState(null);
-  const [ comments, setComments ] = useState([]);
-  const [ currentPage, setCurrentPage ] = useState(1);
-  const [ hasMoreComments, setHasMoreComments ] = useState(true);
-  const [ isLoadingMoreComments, setIsLoadingMoreComments ] = useState(false);
-  const [ newComment, setNewComment ] = useState("");
-  const [ isLoading, setLoading ] = useState(false);
-  const [ isCommentsLoading, setCommentsLoading ] = useState(false);
-  const [ isSubmitting, setSubmitting ] = useState(false);
-  const [ liked, setLiked ] = useState(false);
-  const [ imageModalVisible, setImageModalVisible ] = useState(false);
+  const [post, setPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreComments, setHasMoreComments] = useState(true);
+  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [isLoading, setLoading] = useState(false);
+  const [isCommentsLoading, setCommentsLoading] = useState(false);
+  const [isSubmitting, setSubmitting] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [aiAnalysisModalVisible, setAiAnalysisModalVisible] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [repostCount, setRepostCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
+
+  // Exercise feature states
+  const [exerciseModalVisible, setExerciseModalVisible] = useState(false);
+  const [exerciseDifficultyModalVisible, setExerciseDifficultyModalVisible] = useState(false);
+  const [exerciseData, setExerciseData] = useState(null);
+  const [isLoadingExercises, setIsLoadingExercises] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState(null);
+  const [userAnswers, setUserAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const exerciseScrollViewRef = React.useRef(null);
 
   const darkBackground = isDarkMode ? '#121212' : colors.surfaceContainer;
   const cardBackground = isDarkMode ? 'rgba(32, 32, 36, 0.95)' : colors.surfaceContainerLow;
@@ -93,7 +109,18 @@ const PostDetail = () => {
     });
 
     return unsubscribe;
-  }, [ navigation, postId ]);
+  }, [navigation, postId]);
+
+  // Generate random counts that don't exceed view count
+  const generateRandomCounts = (viewCount) => {
+    if (!viewCount) return { repost: 0, share: 0 };
+
+    // Generate random numbers between 0 and viewCount
+    const repost = Math.floor(Math.random() * viewCount);
+    const share = Math.floor(Math.random() * viewCount);
+
+    return { repost, share };
+  };
 
   const getPostDetails = async () => {
     setLoading(true);
@@ -105,6 +132,12 @@ const PostDetail = () => {
       // Get post details with all information including like status if possible
       const response = await axios.get(`${baseUrl}/posts/${postId}`, config);
       setPost(response.data);
+
+      // Generate random repost and share counts
+      const viewCount = response.data.totalView || 0;
+      const { repost, share } = generateRandomCounts(viewCount);
+      setRepostCount(repost);
+      setShareCount(share);
 
       // Check if the post has isLiked field
       if (userToken) {
@@ -329,6 +362,113 @@ const PostDetail = () => {
     }
   };
 
+  const handleRepostPress = () => {
+    // In a real app, this would handle the repost functionality
+    // For now, we'll just show an alert
+    Alert.alert("Repost", "Repost functionality would be implemented here");
+  };
+
+  const getAiAnalysis = async () => {
+    if (!postId) return;
+
+    setIsLoadingAnalysis(true);
+    setAiAnalysis(null);
+
+    try {
+      const config = userToken ? {
+        headers: { Authorization: `Bearer ${userToken}` }
+      } : {};
+
+      const response = await axios.get(`${baseUrl}/ai/phanTichPost/${postId}`, config);
+
+      if (response.data) {
+        setAiAnalysis(response.data);
+        setAiAnalysisModalVisible(true);
+      } else {
+        throw new Error("No data received from AI analysis");
+      }
+    } catch (error) {
+      console.error("Error fetching AI analysis:", error.message);
+      Alert.alert(
+        "Phân tích thất bại",
+        "Không thể phân tích bài viết. Vui lòng thử lại sau."
+      );
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
+
+  const getExercises = async (level) => {
+    if (!postId) return;
+
+    setIsLoadingExercises(true);
+    setExerciseData(null);
+    setUserAnswers({});
+    setShowResults(false);
+
+    try {
+      const config = userToken ? {
+        headers: { Authorization: `Bearer ${userToken}` }
+      } : {};
+
+      const response = await axios.get(`${baseUrl}/ai/taoBaiTap/${postId}/${level}`, config);
+
+      if (response.data) {
+        setExerciseData(response.data);
+        setExerciseModalVisible(true);
+        setExerciseDifficultyModalVisible(false);
+      } else {
+        throw new Error("No data received from exercise generation");
+      }
+    } catch (error) {
+      console.error("Error fetching exercises:", error.message);
+      Alert.alert(
+        "Tạo bài tập thất bại",
+        "Không thể tạo bài tập từ bài viết này. Vui lòng thử lại sau."
+      );
+    } finally {
+      setIsLoadingExercises(false);
+    }
+  };
+
+  const handleSelectDifficulty = (level) => {
+    setSelectedDifficulty(level);
+    getExercises(level);
+  };
+
+  const handleAnswerSelect = (questionIndex, answer) => {
+    setUserAnswers(prev => ({
+      ...prev,
+      [questionIndex]: answer
+    }));
+  };
+
+  const handleSubmitAnswers = () => {
+    setShowResults(true);
+
+    // Cuộn xuống phần kết quả sau một khoảng thời gian ngắn để đảm bảo kết quả đã được render
+    setTimeout(() => {
+      if (exerciseScrollViewRef.current) {
+        exerciseScrollViewRef.current.scrollToEnd({ animated: true });
+      }
+    }, 300);
+  };
+
+  const calculateScore = () => {
+    if (!exerciseData || !exerciseData.exercises) return { correct: 0, total: 0 };
+
+    const total = exerciseData.exercises.length;
+    let correct = 0;
+
+    exerciseData.exercises.forEach((exercise, index) => {
+      if (userAnswers[index] === exercise.correctAnswer) {
+        correct++;
+      }
+    });
+
+    return { correct, total };
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -376,16 +516,18 @@ const PostDetail = () => {
     return (
       <View style={styles.commentItem}>
         <Image
-          source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.user?.name || 'User')}` }}
-          style={[ styles.commentAvatar, { borderColor: borderColor } ]}
+          source={item.user?.avatar
+            ? { uri: item.user.avatar }
+            : { uri: `https://ui-avatars.com/api/?name=${item.user.name?.split(' ').join('+')}&background=a0a0a0`} }
+          style={[styles.commentAvatar, { borderColor: borderColor }]}
         />
         <View style={styles.commentRightSection}>
           <Text style={[ styles.commentAuthor, { color: colors.onSurface } ]}>
             {item.user?.name || 'Anonymous'}
           </Text>
 
-          <View style={[ styles.commentContent ]}>
-            <Text style={[ styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' } ]}>
+          <View style={[styles.commentContent]}>
+            <Text style={[styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' }]}>
               {item.content}
             </Text>
           </View>
@@ -427,7 +569,7 @@ const PostDetail = () => {
               </Text>
             </TouchableOpacity>
 
-            <Text style={[ styles.commentTime, { color: secondaryText, marginLeft: 'auto' } ]}>
+            <Text style={[styles.commentTime, { color: secondaryText, marginLeft: 'auto' }]}>
               {formatDate(item.createdAt)}
             </Text>
           </View>
@@ -503,24 +645,71 @@ const PostDetail = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[ styles.container, { backgroundColor: darkBackground } ]}
     >
+      {/* Floating Buttons */}
+      <View style={styles.floatingButtonContainer}>
+        {showTooltip && (
+          <View style={[styles.tooltip, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(70, 70, 70, 0.9)' }]}>
+            <Text style={styles.tooltipText}>
+              {isLoadingAnalysis ? "Đang phân tích..." : "Phân tích AI"}
+            </Text>
+          </View>
+        )}
+
+        {/* Analysis Button */}
+        <TouchableOpacity
+          style={[styles.floatingAnalysisButton, {
+            backgroundColor: isLoadingAnalysis ? 'rgba(190, 3, 3, 0.7)' : '#BE0303',
+            shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)',
+            marginBottom: 10
+          }]}
+          onPress={getAiAnalysis}
+          onLongPress={() => setShowTooltip(true)}
+          onPressOut={() => setShowTooltip(false)}
+          disabled={isLoadingAnalysis}
+        >
+          {isLoadingAnalysis ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <MaterialIcons name="psychology" size={28} color="#fff" />
+          )}
+        </TouchableOpacity>
+
+        {/* Exercise Button */}
+        <TouchableOpacity
+          style={[styles.floatingExerciseButton, {
+            backgroundColor: isLoadingExercises ? 'rgba(190, 3, 3, 0.7)' : '#BE0303',
+            shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)'
+          }]}
+          onPress={() => setExerciseDifficultyModalVisible(true)}
+          disabled={isLoadingExercises}
+        >
+          {isLoadingExercises ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <AntDesign name="form" size={24} color="#fff" />
+          )}
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[ styles.postContainer, {
+        <View style={[styles.postContainer, {
           backgroundColor: cardBackground,
           borderColor: borderColor
-        } ]}>
-          <View style={[ styles.postHeader, { borderBottomColor: borderColor } ]}>
+        }]}>
+          <View style={[styles.postHeader, { borderBottomColor: borderColor }]}>
             {/* <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <Ionicons name="arrow-back" size={24} color={colors.onSurface} />
             </TouchableOpacity> */}
             <View style={styles.userInfo}>
               <Image
-                source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author?.name || 'User')}` }
-                }
-                style={[ styles.avatar, { borderColor: borderColor } ]}
+                source={post.author?.avatar
+            ? { uri: post.author.avatar }
+            : { uri: `https://ui-avatars.com/api/?name=${post.author.name?.split(' ').join('+')}&background=a0a0a0`} }
+                style={[styles.avatar, { borderColor: borderColor }]}
               />
               <View>
                 <Text style={[ styles.username, { color: colors.onSurface } ]}>
@@ -550,7 +739,7 @@ const PostDetail = () => {
           </View>
 
           {post.mainImage && (
-            <View style={[ styles.imageContainer, { borderColor: borderColor } ]}>
+            <View style={[styles.imageContainer, { borderColor: borderColor }]}>
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={() => setImageModalVisible(true)}
@@ -568,7 +757,7 @@ const PostDetail = () => {
           )}
 
           {isGrammarPost && (
-            <View style={[ styles.section, {
+            <View style={[styles.section, {
               backgroundColor: sectionBackground,
               borderColor: borderColor
             } ]}>
@@ -586,7 +775,7 @@ const PostDetail = () => {
             </View>
           )}
 
-          <View style={[ styles.postStats, {
+          <View style={[styles.postStats, {
             borderTopColor: separatorColor,
             borderBottomColor: separatorColor
           } ]}>
@@ -612,35 +801,22 @@ const PostDetail = () => {
                 {post.totalView || 0}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={(e) => {
-                e.stopPropagation();
-                // Random repost count would be implemented here
-                Alert.alert("Repost", "Repost functionality would be implemented here");
-              }}
-            >
-              <Feather name="repeat" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
-              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient } ]}>
-                {Math.floor((post.id * 13) % 500)}
+            <TouchableOpacity style={styles.statItem} onPress={handleRepostPress}>
+              <Feather name="repeat" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
+              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+                {repostCount}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleSharePost(post);
-              }}
-            >
-              <Feather name="share" size={20} color={isDarkMode ? '#bbb' : colors.onSurfaceVarient} />
-              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurfaceVarient } ]}>
-                {Math.floor((post.id * 17) % 500)}
+            <TouchableOpacity style={styles.statItem} onPress={handleSharePost}>
+              <Feather name="share" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
+              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+                {shareCount}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={[ styles.commentsSection, {
+        <View style={[styles.commentsSection, {
           backgroundColor: cardBackground,
           borderColor: borderColor
         } ]}>
@@ -665,10 +841,10 @@ const PostDetail = () => {
 
               {hasMoreComments && (
                 <TouchableOpacity
-                  style={[ styles.loadMoreButton, {
+                  style={[styles.loadMoreButton, {
                     borderColor: borderColor,
                     backgroundColor: isDarkMode ? 'rgba(50, 50, 60, 0.5)' : 'rgba(240, 240, 245, 0.5)'
-                  } ]}
+                  }]}
                   onPress={loadMoreComments}
                   disabled={isLoadingMoreComments}
                 >
@@ -700,12 +876,12 @@ const PostDetail = () => {
         </View>
 
         {/* Comment Input Section */}
-        <View style={[ styles.commentInputContainer, {
+        <View style={[styles.commentInputContainer, {
           backgroundColor: cardBackground,
           borderColor: borderColor
         } ]}>
           <TextInput
-            style={[ styles.commentInput, {
+            style={[styles.commentInput, {
               color: colors.onSurface,
               backgroundColor: isDarkMode ? 'rgba(40, 40, 45, 0.9)' : colors.surfaceContainerLow,
               borderColor: borderColor
@@ -719,11 +895,9 @@ const PostDetail = () => {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              {
-                backgroundColor: isSubmitting
-                  ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh)
-                  : colors.primary
-              }
+              {backgroundColor: isSubmitting
+                ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh)
+                : colors.primary}
             ]}
             onPress={handleAddComment}
             disabled={!newComment.trim() || isSubmitting}
@@ -753,8 +927,335 @@ const PostDetail = () => {
             style={styles.fullScreenImage}
             resizeMode="contain"
           />
-
         </Pressable>
+      </Modal>
+
+      {/* AI Analysis Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={aiAnalysisModalVisible}
+        onRequestClose={() => setAiAnalysisModalVisible(false)}
+      >
+        <View style={[styles.analysisModalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.analysisModalContent, {
+            backgroundColor: cardBackground,
+            borderColor: borderColor
+          }]}>
+            <View style={styles.analysisModalHeader}>
+              <Text style={[styles.analysisModalTitle, { color: colors.onSurface }]}>
+                Phân tích bài viết
+              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setAiAnalysisModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color={colors.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.analysisScrollView}>
+              {aiAnalysis ? (
+                <View style={styles.analysisContent}>
+                  {/* Overview Section */}
+                  <View style={[styles.analysisSection, { borderBottomColor: borderColor }]}>
+                    <Text style={[styles.analysisSectionTitle, { color: colors.primary }]}>
+                      Tổng quan
+                    </Text>
+                    <Text style={[styles.analysisText, { color: colors.onSurface }]}>
+                      {aiAnalysis.overview}
+                    </Text>
+                  </View>
+
+                  {/* English Knowledge Section */}
+                  {aiAnalysis.englishKnowledge && aiAnalysis.englishKnowledge.length > 0 && (
+                    <View style={[styles.analysisSection, { borderBottomColor: borderColor }]}>
+                      <Text style={[styles.analysisSectionTitle, { color: colors.primary }]}>
+                        Kiến thức tiếng Anh
+                      </Text>
+
+                      {aiAnalysis.englishKnowledge.map((knowledge, index) => (
+                        <View key={`knowledge-${index}`} style={styles.knowledgeItem}>
+                          <Text style={[styles.knowledgeTopic, { color: colors.onSurface }]}>
+                            {knowledge.topic}
+                          </Text>
+
+                          <Text style={[styles.analysisSubtitle, { color: colors.primary }]}>
+                            Chi tiết:
+                          </Text>
+                          {knowledge.details.map((detail, detailIndex) => (
+                            <View key={`detail-${detailIndex}`} style={styles.bulletPoint}>
+                              <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
+                              <Text style={[styles.analysisText, { color: colors.onSurface }]}>
+                                {detail}
+                              </Text>
+                            </View>
+                          ))}
+
+                          <Text style={[styles.analysisSubtitle, { color: colors.primary, marginTop: 10 }]}>
+                            Ví dụ:
+                          </Text>
+                          {knowledge.examples.map((example, exampleIndex) => (
+                            <View key={`example-${exampleIndex}`} style={styles.bulletPoint}>
+                              <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
+                              <Text style={[styles.analysisText, { color: colors.onSurface, fontStyle: 'italic' }]}>
+                                {example}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Learning Tips Section */}
+                  {aiAnalysis.learningTips && aiAnalysis.learningTips.length > 0 && (
+                    <View style={styles.analysisSection}>
+                      <Text style={[styles.analysisSectionTitle, { color: colors.primary }]}>
+                        Mẹo học tập
+                      </Text>
+
+                      {aiAnalysis.learningTips.map((tip, tipIndex) => (
+                        <View key={`tip-${tipIndex}`} style={styles.bulletPoint}>
+                          <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
+                          <Text style={[styles.analysisText, { color: colors.onSurface }]}>
+                            {tip}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.loadingAnalysisContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.loadingAnalysisText, { color: colors.onSurface }]}>
+                    Đang phân tích bài viết...
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Exercise Difficulty Selection Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={exerciseDifficultyModalVisible}
+        onRequestClose={() => setExerciseDifficultyModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.difficultyModalOverlay}
+          activeOpacity={1}
+          onPress={() => setExerciseDifficultyModalVisible(false)}
+        >
+          <View style={[styles.difficultyModalContainer, { backgroundColor: cardBackground }]}>
+            <Text style={[styles.difficultyModalTitle, { color: colors.onSurface }]}>
+              Chọn độ khó
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.difficultyOption, { borderColor: borderColor }]}
+              onPress={() => handleSelectDifficulty(1)}
+              disabled={isLoadingExercises}
+            >
+              <Text style={[styles.difficultyOptionText, { color: colors.onSurface }]}>Dễ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.difficultyOption, { borderColor: borderColor }]}
+              onPress={() => handleSelectDifficulty(3)}
+              disabled={isLoadingExercises}
+            >
+              <Text style={[styles.difficultyOptionText, { color: colors.onSurface }]}>Trung bình</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.difficultyOption, { borderColor: borderColor }]}
+              onPress={() => handleSelectDifficulty(5)}
+              disabled={isLoadingExercises}
+            >
+              <Text style={[styles.difficultyOptionText, { color: colors.onSurface }]}>Khó</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Exercise Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={exerciseModalVisible}
+        onRequestClose={() => setExerciseModalVisible(false)}
+      >
+        <View style={[styles.exerciseModalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.exerciseModalContent, {
+            backgroundColor: cardBackground,
+            borderColor: borderColor
+          }]}>
+            <View style={styles.exerciseModalHeader}>
+              <Text style={[styles.exerciseModalTitle, { color: colors.onSurface }]}>
+                Bài tập luyện tập
+              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setExerciseModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color={colors.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              ref={exerciseScrollViewRef}
+              style={styles.exerciseScrollView}>
+              {exerciseData ? (
+                <View style={styles.exerciseContent}>
+                  {/* Summary Section */}
+                  <View style={[styles.exerciseSection, { borderBottomColor: borderColor }]}>
+                    <Text style={[styles.exerciseSectionTitle, { color: colors.primary }]}>
+                      Tóm tắt
+                    </Text>
+                    <Text style={[styles.exerciseText, { color: colors.onSurface }]}>
+                      {exerciseData.analysisSummary}
+                    </Text>
+                  </View>
+
+                  {/* Exercises Section */}
+                  {exerciseData.exercises && exerciseData.exercises.length > 0 && (
+                    <View style={styles.exerciseSection}>
+                      <Text style={[styles.exerciseSectionTitle, { color: colors.primary }]}>
+                        Câu hỏi trắc nghiệm
+                      </Text>
+
+                      {exerciseData.exercises.map((exercise, index) => (
+                        <View key={`exercise-${index}`} style={[styles.exerciseItem, {
+                          borderColor: borderColor,
+                          backgroundColor: isDarkMode ? 'rgba(45, 45, 55, 0.8)' : 'rgba(245, 245, 250, 0.8)'
+                        }]}>
+                          <Text style={[styles.exerciseQuestion, { color: colors.onSurface }]}>
+                            {index + 1}. {exercise.question}
+                          </Text>
+
+                          {Object.entries(exercise.options).map(([key, value]) => (
+                            <TouchableOpacity
+                              key={`option-${index}-${key}`}
+                              style={[
+                                styles.exerciseOption,
+                                {
+                                  borderColor: borderColor,
+                                  backgroundColor: showResults
+                                    ? key === exercise.correctAnswer
+                                      ? 'rgba(76, 175, 80, 0.2)'
+                                      : userAnswers[index] === key && userAnswers[index] !== exercise.correctAnswer
+                                        ? 'rgba(244, 67, 54, 0.2)'
+                                        : isDarkMode ? 'rgba(40, 40, 50, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+                                    : userAnswers[index] === key
+                                      ? isDarkMode ? 'rgba(70, 70, 90, 0.8)' : 'rgba(220, 220, 240, 0.8)'
+                                      : isDarkMode ? 'rgba(40, 40, 50, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+                                }
+                              ]}
+                              onPress={() => !showResults && handleAnswerSelect(index, key)}
+                              disabled={showResults}
+                            >
+                              <View style={[styles.optionLetter, {
+                                backgroundColor: key === exercise.correctAnswer && showResults
+                                  ? '#4CAF50'
+                                  : userAnswers[index] === key && userAnswers[index] !== exercise.correctAnswer && showResults
+                                    ? '#F44336'
+                                    : colors.primary
+                              }]}>
+                                <Text style={styles.optionLetterText}>{key}</Text>
+                              </View>
+                              <Text style={[styles.optionText, { color: colors.onSurface }]}>
+                                {value}
+                              </Text>
+                              {showResults && key === exercise.correctAnswer && (
+                                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={styles.resultIcon} />
+                              )}
+                              {showResults && userAnswers[index] === key && key !== exercise.correctAnswer && (
+                                <Ionicons name="close-circle" size={20} color="#F44336" style={styles.resultIcon} />
+                              )}
+                            </TouchableOpacity>
+                          ))}
+
+                          {showResults && (
+                            <View style={[styles.explanationContainer, { borderColor: borderColor }]}>
+                              <Text style={[styles.explanationTitle, { color: colors.primary }]}>
+                                Giải thích:
+                              </Text>
+                              <Text style={[styles.explanationText, { color: colors.onSurface }]}>
+                                {exercise.explanation}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      ))}
+
+                      {!showResults && (
+                        <TouchableOpacity
+                          style={[styles.submitButton, {
+                            backgroundColor: colors.primary,
+                            opacity: Object.keys(userAnswers).length === exerciseData.exercises.length ? 1 : 0.7
+                          }]}
+                          onPress={handleSubmitAnswers}
+                          disabled={Object.keys(userAnswers).length !== exerciseData.exercises.length}
+                        >
+                          <Text style={styles.submitButtonText}>Kiểm tra kết quả</Text>
+                        </TouchableOpacity>
+                      )}
+
+                      {showResults && (
+                        <>
+                          <View style={styles.resultSummaryContainer}>
+                            {calculateScore().correct === calculateScore().total ? (
+                              <View style={[styles.congratsContainer, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                                <Ionicons name="trophy" size={40} color="#4CAF50" />
+                                <Text style={styles.congratsTitle}>Chúc mừng!</Text>
+                                <Text style={styles.congratsText}>
+                                  Bạn đã trả lời đúng tất cả {calculateScore().total} câu hỏi.
+                                </Text>
+                              </View>
+                            ) : (
+                              <View style={[styles.tryAgainContainer, { backgroundColor: 'rgba(244, 67, 54, 0.1)' }]}>
+                                <Ionicons name="sad" size={40} color="#F44336" />
+                                <Text style={styles.tryAgainTitle}>Chia buồn!</Text>
+                                <Text style={styles.tryAgainText}>
+                                  Bạn đã trả lời đúng {calculateScore().correct}/{calculateScore().total} câu hỏi.
+                                </Text>
+                                <Text style={styles.encouragementText}>
+                                  Hãy xem lại phần giải thích và thử lại nhé!
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+
+                          <TouchableOpacity
+                            style={[styles.resetButton, { borderColor: colors.primary }]}
+                            onPress={() => {
+                              setUserAnswers({});
+                              setShowResults(false);
+                            }}
+                          >
+                            <Text style={[styles.resetButtonText, { color: colors.primary }]}>Làm lại</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.loadingExerciseContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.loadingExerciseText, { color: colors.onSurface }]}>
+                    Đang tạo bài tập...
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -764,6 +1265,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingBottom: 20,
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    right: 10,
+    top: '40%',
+    zIndex: 1000,
+    alignItems: 'flex-end',
+  },
+  floatingAnalysisButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  floatingExerciseButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  tooltip: {
+    position: 'absolute',
+    right: 65,
+    top: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    zIndex: 1001,
+  },
+  tooltipText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
   },
   loadingContainer: {
     flex: 1,
@@ -893,6 +1437,316 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '80%',
   },
+  // AI Analysis Modal Styles
+  analysisModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  analysisModalContent: {
+    width: '100%',
+    maxHeight: '90%',
+    borderRadius: 15,
+    borderWidth: 0.5,
+    overflow: 'hidden',
+  },
+  analysisModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(150, 150, 150, 0.3)',
+  },
+  analysisModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  analysisScrollView: {
+    padding: 15,
+  },
+  analysisContent: {
+    paddingBottom: 20,
+  },
+  analysisSection: {
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 0.5,
+  },
+  analysisSectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 10,
+  },
+  analysisSubtitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    marginBottom: 5,
+  },
+  analysisText: {
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 22,
+    flex: 1,
+  },
+  knowledgeItem: {
+    marginBottom: 15,
+  },
+  knowledgeTopic: {
+    fontSize: 17,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 10,
+  },
+  bulletPoint: {
+    flexDirection: 'row',
+    marginBottom: 5,
+    paddingRight: 5,
+  },
+  bulletDot: {
+    fontSize: 18,
+    marginRight: 8,
+    lineHeight: 22,
+  },
+  loadingAnalysisContainer: {
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingAnalysisText: {
+    marginTop: 15,
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+  },
+  // Exercise Difficulty Modal Styles
+  difficultyModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  difficultyModalContainer: {
+    width: 250,
+    padding: 20,
+    borderRadius: 15,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  difficultyModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 20,
+  },
+  difficultyOption: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  difficultyOptionText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+  },
+  // Exercise Modal Styles
+  exerciseModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  exerciseModalContent: {
+    width: '100%',
+    maxHeight: '90%',
+    borderRadius: 15,
+    borderWidth: 0.5,
+    overflow: 'hidden',
+  },
+  exerciseModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(150, 150, 150, 0.3)',
+  },
+  exerciseModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+  },
+  exerciseScrollView: {
+    padding: 15,
+  },
+  exerciseContent: {
+    paddingBottom: 20,
+  },
+  exerciseSection: {
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 0.5,
+  },
+  exerciseSectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 10,
+  },
+  exerciseText: {
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 22,
+  },
+  exerciseItem: {
+    marginBottom: 20,
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 0.5,
+  },
+  exerciseQuestion: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 15,
+    lineHeight: 22,
+  },
+  exerciseOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    position: 'relative',
+  },
+  optionLetter: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  optionLetterText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+  },
+  optionText: {
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    flex: 1,
+    paddingRight: 25,
+  },
+  resultIcon: {
+    position: 'absolute',
+    right: 10,
+  },
+  explanationContainer: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderStyle: 'dashed',
+  },
+  explanationTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 5,
+  },
+  explanationText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 20,
+  },
+  submitButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+  },
+  resetButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+    borderWidth: 1,
+  },
+  resetButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+  },
+  loadingExerciseContainer: {
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingExerciseText: {
+    marginTop: 15,
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+  },
+  resultSummaryContainer: {
+    marginTop: 20,
+    marginBottom: 15,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  congratsContainer: {
+    padding: 20,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  congratsTitle: {
+    fontSize: 22,
+    fontFamily: 'Inter-Bold',
+    color: '#4CAF50',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  congratsText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#333',
+    textAlign: 'center',
+  },
+  tryAgainContainer: {
+    padding: 20,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  tryAgainTitle: {
+    fontSize: 22,
+    fontFamily: 'Inter-Bold',
+    color: '#F44336',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  tryAgainText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#333',
+    textAlign: 'center',
+  },
+  encouragementText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 8,
+  },
   section: {
     margin: 15,
     marginTop: 0,
@@ -958,21 +1812,23 @@ const styles = StyleSheet.create({
   postStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 5,
     paddingVertical: 15,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     paddingHorizontal: 10,
+    justifyContent: 'space-between',
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   statText: {
     marginLeft: 5,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
   },
   commentsSection: {
@@ -1104,4 +1960,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PostDetail; 
+export default PostDetail;

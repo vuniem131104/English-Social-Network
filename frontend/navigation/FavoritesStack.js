@@ -12,11 +12,12 @@ import {
   Alert,
   RefreshControl
 } from "react-native";
-import { useTheme } from "@react-navigation/native";
+import { useTheme, useNavigation } from "@react-navigation/native";
 import { Ionicons, Feather } from '@expo/vector-icons';
 import axios from "axios";
 import { baseUrl } from "../services/api";
 import { AuthContext } from "../context/authContext";
+import PostDetail from "../screens/Home/PostDetail";
 
 // Placeholder data for activity feed
 const activityData = [
@@ -74,6 +75,7 @@ const activityData = [
 
 // Placeholder component cho favorites screen
 const FavoritesScreen = () => {
+  const navigation = useNavigation();
   const { colors } = useTheme();
   const { userToken, userInfo } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('posts');
@@ -123,80 +125,105 @@ const FavoritesScreen = () => {
     fetchUserPosts();
   };
 
-  const renderActivityItem = ({ item }) => (
-    <View style={[styles.activityItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
-      <View style={styles.activityHeader}>
-        <View style={styles.userContainer}>
-          <Image
-            source={{ uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0` }}
-            style={styles.userAvatar}
-          />
-          <View style={styles.userInfo}>
-            <Text style={[styles.username, { color: colors.onSurface }]}>{item.name}</Text>
-            <Text style={[styles.timeAgo, { color: colors.onSurfaceVarient }]}>{item.timeAgo}</Text>
-            {item.isForYou && (
-              <Text style={[styles.forYouTag, { color: colors.onSurfaceVarient }]}>Được chọn cho bạn</Text>
-            )}
+  const handlePostPress = (post) => {
+    navigation.navigate("PostDetail", { postId: post.id });
+  };
+
+  const renderActivityItem = ({ item }) => {
+    // Generate random values for repost and share counts that don't exceed view count
+    const viewCount = item.views || 0;
+    const generateRandomCount = (max) => {
+      if (max === 0) return 0;
+      return Math.floor(Math.random() * max);
+    };
+
+    // Use existing shares value if present, otherwise generate random
+    const repostCount = item.shares || generateRandomCount(viewCount);
+    // Generate random share count
+    const shareCount = generateRandomCount(viewCount);
+
+    return (
+      <View style={[styles.activityItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
+        <View style={styles.activityHeader}>
+          <View style={styles.userContainer}>
+            <Image
+              source={item.avatar
+            ? { uri: item.avatar }
+            : { uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0`} }
+              style={styles.userAvatar}
+            />
+            <View style={styles.userInfo}>
+              <Text style={[styles.username, { color: colors.onSurface }]}>{item.username}</Text>
+              <Text style={[styles.timeAgo, { color: colors.onSurfaceVarient }]}>{item.timeAgo}</Text>
+              {item.isForYou && (
+                <Text style={[styles.forYouTag, { color: colors.onSurfaceVarient }]}>Được chọn cho bạn</Text>
+              )}
+            </View>
           </View>
-        </View>
-        <TouchableOpacity>
-          <Feather name="more-horizontal" size={20} color={colors.onSurfaceVarient} />
-        </TouchableOpacity>
-      </View>
-
-      <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.content}</Text>
-
-      <View style={styles.postStats}>
-        <View style={styles.statItem}>
-          <TouchableOpacity style={styles.statButton}>
-            <Ionicons name="heart-outline" size={22} color={colors.onSurface} />
+          <TouchableOpacity>
+            <Feather name="more-horizontal" size={20} color={colors.onSurfaceVarient} />
           </TouchableOpacity>
-          <Text style={[styles.statText, { color: colors.onSurface }]}>{item.likes}</Text>
         </View>
 
-        <View style={styles.statItem}>
-          <TouchableOpacity style={styles.statButton}>
-            <Ionicons name="chatbubble-outline" size={22} color={colors.onSurface} />
-          </TouchableOpacity>
-          <Text style={[styles.statText, { color: colors.onSurface }]}>{item.comments}</Text>
-        </View>
+        <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.content}</Text>
 
-        {item.shares && (
+        <View style={styles.postStats}>
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Ionicons name="heart-outline" size={22} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.likes}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Ionicons name="chatbubble-outline" size={22} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.comments}</Text>
+          </View>
+
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
               <Feather name="repeat" size={22} color={colors.onSurface} />
             </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.shares}</Text>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
           </View>
-        )}
 
-        {item.views && (
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
               <Feather name="share" size={22} color={colors.onSurface} />
             </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.views}</Text>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
+          </View>
+
+          {item.views && (
+            <View style={styles.statItem}>
+              <TouchableOpacity style={styles.statButton}>
+                <Feather name="eye" size={22} color={colors.onSurface} />
+              </TouchableOpacity>
+              <Text style={[styles.statText, { color: colors.onSurface }]}>{item.views}</Text>
+            </View>
+          )}
+        </View>
+
+        {item.type === 'previous' && item.id === '2' && (
+          <View style={[styles.viewMoreContainer, { backgroundColor: colors.surfaceContainerLow }]}>
+            <Text style={[styles.viewMoreText, { color: colors.onSurface }]}>
+              Bạn muốn xem thêm hay ẩn bớt thông báo tương tự?
+            </Text>
+            <View style={styles.viewMoreButtons}>
+              <TouchableOpacity style={[styles.viewMoreButton, { borderColor: colors.outline }]}>
+                <Text style={[styles.viewMoreButtonText, { color: colors.onSurface }]}>Xem thêm</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.viewMoreButton, { borderColor: colors.outline }]}>
+                <Text style={[styles.viewMoreButtonText, { color: colors.onSurface }]}>Ẩn bớt</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
-
-      {item.type === 'previous' && item.id === '2' && (
-        <View style={[styles.viewMoreContainer, { backgroundColor: colors.surfaceContainerLow }]}>
-          <Text style={[styles.viewMoreText, { color: colors.onSurface }]}>
-            Bạn muốn xem thêm hay ẩn bớt thông báo tương tự?
-          </Text>
-          <View style={styles.viewMoreButtons}>
-            <TouchableOpacity style={[styles.viewMoreButton, { borderColor: colors.outline }]}>
-              <Text style={[styles.viewMoreButtonText, { color: colors.onSurface }]}>Xem thêm</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.viewMoreButton, { borderColor: colors.outline }]}>
-              <Text style={[styles.viewMoreButtonText, { color: colors.onSurface }]}>Ẩn bớt</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </View>
-  );
+    );
+  };
 
   const renderPostItem = ({ item }) => {
     // Format the date to display like in the image
@@ -220,16 +247,27 @@ const FavoritesScreen = () => {
       }
     };
 
-    // Generate random values for repost and share counts based on post ID for consistency
-    const repostCount = Math.floor((item.id * 13) % 500);
-    const shareCount = Math.floor((item.id * 17) % 500);
+    // Generate random values for repost and share counts that don't exceed view count
+    const viewCount = item.totalView || 0;
+    const generateRandomCount = (max) => {
+      if (max === 0) return 0;
+      return Math.floor(Math.random() * max);
+    };
+
+    const repostCount = generateRandomCount(viewCount);
+    const shareCount = generateRandomCount(viewCount);
 
     return (
-      <View style={[styles.postItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
+      <TouchableOpacity
+        style={[styles.postItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}
+        onPress={() => handlePostPress(item)}
+      >
         <View style={styles.activityHeader}>
           <View style={styles.userContainer}>
             <Image
-              source={{ uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0` }}
+              source={item.author?.avatar
+            ? { uri: item.author.avatar }
+            : { uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0`} }
               style={styles.userAvatar}
             />
             <View style={styles.userInfo}>
@@ -266,13 +304,6 @@ const FavoritesScreen = () => {
 
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
-              <Feather name="eye" size={18} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
               <Feather name="repeat" size={18} color={colors.onSurface} />
             </TouchableOpacity>
             <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
@@ -285,15 +316,21 @@ const FavoritesScreen = () => {
             <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
           </View>
 
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="eye" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
       <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Hoạt động</Text>
+        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Activities</Text>
       </View>
 
       <View style={styles.tabsContainer}>
@@ -384,6 +421,7 @@ const FavoritesScreen = () => {
               renderItem={renderPostItem}
               keyExtractor={item => item.id.toString()}
               scrollEnabled={false}
+              contentContainerStyle={{ paddingBottom: 100 }}
             />
           ) : (
             <View style={styles.emptyContainer}>
@@ -426,6 +464,7 @@ const FavoritesStackScreen = () => {
   return (
     <FavoritesStack.Navigator screenOptions={{ headerShown: false }}>
       <FavoritesStack.Screen name="FavoritesScreen" component={FavoritesScreen} />
+      <FavoritesStack.Screen name="PostDetail" component={PostDetail} />
     </FavoritesStack.Navigator>
   );
 };

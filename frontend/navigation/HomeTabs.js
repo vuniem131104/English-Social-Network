@@ -27,6 +27,7 @@ export default function HomeTabs() {
             <Tab.Screen
                 name="Favorites"
                 component={FavoritesStackScreen}
+                options={{ title: "Activities" }}
             />
             <Tab.Screen
                 name="Shopping"
