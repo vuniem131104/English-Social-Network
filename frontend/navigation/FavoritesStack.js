@@ -399,7 +399,7 @@ const FavoritesScreen = () => {
               { color: activeTab === 'mentions' ? colors.onSurface : colors.onSurfaceVarient }
             ]}
           >
-            Lượt nhắc đến
+            Lượt nhắc
           </Text>
         </TouchableOpacity>
       </View>

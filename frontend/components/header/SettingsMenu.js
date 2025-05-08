@@ -11,8 +11,6 @@ import { toggleTheme } from "../../store/index";
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { baseUrl } from "../../services/api";
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 
 const ModalComponent = ({ visible, onClose, title, content, colors }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -456,7 +454,8 @@ const SettingsMenu = ({ closeMenu }) => {
         colors={colors}
         text="Về chúng tôi"
         func={handleAboutUs}
-        icon={<FontAwesome5 name="info-circle" size={22} color={colors.primary} style={styles.menuItemImage} />}
+        imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")}
+        // icon={<FontAwesome5 name="info-circle" size={22} color={colors.primary} style={styles.menuItemImage} />}
       />
 
       <MenuItem
@@ -466,7 +465,8 @@ const SettingsMenu = ({ closeMenu }) => {
           closeMenu && closeMenu();
           setShowSettings(true);
         }}
-        icon={<Ionicons name="settings-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
+        imageSource={isDarkMode ? require("../../assets/item.png") : require("../../assets/navbaritem.png")}
+        // icon={<Ionicons name="settings-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
       />
 
       {/* <MenuItem
@@ -481,7 +481,8 @@ const SettingsMenu = ({ closeMenu }) => {
         isDarkMode={isDarkMode}
         text="Phản hồi"
         func={handleFeedback}
-        icon={<Ionicons name="chatbox-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
+        imageSource={isDarkMode ? require("../../assets/Frame15.png") : require("../../assets/frame-141.png")}
+        // icon={<Ionicons name="chatbox-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
       />
 
       {userToken != null && userInfo && (
@@ -490,7 +491,7 @@ const SettingsMenu = ({ closeMenu }) => {
           isDarkMode={isDarkMode}
           text={userInfo?.name || 'Người dùng'}
           func={handleProfilePress}
-          icon={<Ionicons name="person-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
+          imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")}
         />
       )}
 
@@ -574,7 +575,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     marginLeft: 10,
-    marginTop: 2,
+    marginTop: 1,
     fontFamily: FontFamily.labelLargeMedium,
     fontSize: FontSize.labelLargeBold_size,
   },
