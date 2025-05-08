@@ -11,6 +11,9 @@ import SignIn from "./screens/auth/SignIn";
 import SignUp from "./screens/auth/SignUp";
 import CartScreen from "./screens/Shopping/CartScreen";
 import OrderConfirmationScreen from "./screens/Shopping/OrderConfirmationScreen";
+import Profile from "./screens/Profile/Profile";
+import EditProfile from "./screens/Profile/EditProfile";
+import PostDetail from "./screens/Home/PostDetail";
 import { StatusBar } from "react-native";
 import { AuthContext, AuthProvider } from "./context/authContext";
 import HomeTabs from "./navigation/HomeTabs";
@@ -67,6 +70,27 @@ const AppContent = () => {
           {props => (
             <NormalScreenWrapper>
               <RequireAuthentication Component={OrderConfirmationScreen} userToken={userToken} {...props} />
+            </NormalScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Profile">
+          {props => (
+            <NormalScreenWrapper>
+              <RequireAuthentication Component={Profile} userToken={userToken} {...props} />
+            </NormalScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="EditProfile">
+          {props => (
+            <NormalScreenWrapper>
+              <RequireAuthentication Component={EditProfile} userToken={userToken} {...props} />
+            </NormalScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="PostDetail">
+          {props => (
+            <NormalScreenWrapper>
+              <PostDetail {...props} />
             </NormalScreenWrapper>
           )}
         </Stack.Screen>

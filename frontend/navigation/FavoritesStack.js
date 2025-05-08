@@ -182,6 +182,15 @@ const FavoritesScreen = () => {
             <Text style={[styles.statText, { color: colors.onSurface }]}>{item.comments}</Text>
           </View>
 
+          {item.views && (
+            <View style={styles.statItem}>
+              <TouchableOpacity style={styles.statButton}>
+                <Feather name="eye" size={22} color={colors.onSurface} />
+              </TouchableOpacity>
+              <Text style={[styles.statText, { color: colors.onSurface }]}>{item.views}</Text>
+            </View>
+          )}
+
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
               <Feather name="repeat" size={22} color={colors.onSurface} />
@@ -195,15 +204,7 @@ const FavoritesScreen = () => {
             </TouchableOpacity>
             <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
           </View>
-
-          {item.views && (
-            <View style={styles.statItem}>
-              <TouchableOpacity style={styles.statButton}>
-                <Feather name="eye" size={22} color={colors.onSurface} />
-              </TouchableOpacity>
-              <Text style={[styles.statText, { color: colors.onSurface }]}>{item.views}</Text>
-            </View>
-          )}
+          
         </View>
 
         {item.type === 'previous' && item.id === '2' && (
@@ -304,6 +305,13 @@ const FavoritesScreen = () => {
 
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
+              <Feather name="eye" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
               <Feather name="repeat" size={18} color={colors.onSurface} />
             </TouchableOpacity>
             <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
@@ -315,13 +323,6 @@ const FavoritesScreen = () => {
             </TouchableOpacity>
             <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
           </View>
-
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
-              <Feather name="eye" size={18} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
-          </View>
         </View>
       </TouchableOpacity>
     );
@@ -330,7 +331,7 @@ const FavoritesScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.surfaceContainer }]}>
       <View style={styles.headerContainer}>
-        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Activities</Text>
+        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Hoạt động</Text>
       </View>
 
       <View style={styles.tabsContainer}>

@@ -13,6 +13,7 @@ const ButtonPrimary = ({
   textMarginHorizontal,
   textMarginVertical,
   image,
+  icon,
   buttonPrimaryBackgroundColor,
   buttonPrimaryBorderWidth,
   buttonPrimaryFlex,
@@ -65,6 +66,7 @@ const ButtonPrimary = ({
   return (
     <Pressable onPress={onPressButton} style={[styles.buttonprimary, buttonPrimaryStyle]}>
       {image !== "unset" ? <Image source={image} /> : null}
+      {icon}
       <Text style={[styles.textLayout, textLayoutStyle]}>{text}</Text>
     </Pressable>
   );

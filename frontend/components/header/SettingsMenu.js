@@ -1,17 +1,18 @@
 import * as React from "react";
 import { Image } from "expo-image";
-import { StyleSheet, Text, View, Pressable, Switch, SafeAreaView, Modal, TouchableOpacity, Animated, TextInput, ActivityIndicator } from "react-native";
+import { StyleSheet, Text, View, Pressable, Switch, SafeAreaView, Modal, TouchableOpacity, Animated, Alert } from "react-native";
 import { Padding, Color, FontSize, Border, FontFamily } from "../../GlobalStyles";
 import ButtonPrimary from "../button/ButtonPrimary";
 import { useNavigation, useTheme } from "@react-navigation/native";
 import { useSelector, useDispatch } from "react-redux";
-import { toggleTheme } from "../../store";
 import { useContext, useState } from "react";
 import { AuthContext } from "../../context/authContext";
-import axios from "axios";
+import { toggleTheme } from "../../store/index";
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { baseUrl } from "../../services/api";
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 
 const ModalComponent = ({ visible, onClose, title, content, colors }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -87,8 +88,8 @@ const ModalComponent = ({ visible, onClose, title, content, colors }) => {
           ]}
         >
           <LinearGradient
-            colors={isDarkMode 
-              ? [colors.primary, colors.primaryContainer] 
+            colors={isDarkMode
+              ? [colors.primary, colors.primaryContainer]
               : [colors.primary, colors.primaryFixed]
             }
             start={{ x: 0, y: 0 }}
@@ -114,7 +115,7 @@ const ModalComponent = ({ visible, onClose, title, content, colors }) => {
               </TouchableOpacity>
             </View>
           </LinearGradient>
-          
+
           <View style={[styles.modalBody, { backgroundColor: colors.surfaceContainerHigh }]}>
             <View style={styles.contentContainer}>
               {title === "Về chúng tôi" ? (
@@ -180,8 +181,8 @@ const ModalComponent = ({ visible, onClose, title, content, colors }) => {
 
             <View style={styles.modalButtons}>
               <LinearGradient
-                colors={isDarkMode 
-                  ? [colors.primary, colors.primaryContainer] 
+                colors={isDarkMode
+                  ? [colors.primary, colors.primaryContainer]
                   : [colors.primary, colors.primaryFixed]
                 }
                 start={{ x: 0, y: 0 }}
@@ -206,411 +207,7 @@ const ModalComponent = ({ visible, onClose, title, content, colors }) => {
   );
 };
 
-const EditProfileModal = ({ visible, onClose, userInfo, colors, onUpdate }) => {
-  const [name, setName] = useState(userInfo?.name || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [scaleAnim] = useState(new Animated.Value(0.8));
-  const [slideAnim] = useState(new Animated.Value(0));
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(null);
-  const { userToken } = useContext(AuthContext);
-  const isDarkMode = useSelector(state => state.theme.isDarkMode);
-
-  React.useEffect(() => {
-    if (visible) {
-      setName(userInfo?.name || '');
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
-
-  const handleUpdate = async () => {
-    if (!name.trim()) {
-      setError('Tên không được để trống');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.put(`${baseUrl}/profile/edit`, 
-        {
-          bio: null,
-          name: name.trim(),
-          avatar: null,
-          banner: null
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${userToken}`,
-            'Content-Type': 'application/json',
-            'accept': '*/*'
-          }
-        }
-      );
-
-      if (response.data.message === "Cập nhật hồ sơ thành công.") {
-        onUpdate(response.data.profile);
-        onClose();
-      }
-    } catch (error) {
-      setError('Có lỗi xảy ra khi cập nhật hồ sơ');
-      console.error('Update profile error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordChange = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('Vui lòng điền đầy đủ thông tin');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Mật khẩu mới không khớp');
-      return;
-    }
-    if (newPassword.length < 6) {
-      setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
-      return;
-    }
-    
-    // Fake success message
-    Alert.alert(
-      "Thành công",
-      "Mật khẩu đã được thay đổi",
-      [{ text: "OK", onPress: () => {
-        setShowPasswordChange(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setPasswordError(null);
-      }}]
-    );
-  };
-
-  if (!visible) return null;
-
-  return (
-    <Modal
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-      animationType="none"
-    >
-      <View style={styles.modalOverlay}>
-        <Animated.View
-          style={[
-            styles.modalContent,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { scale: scaleAnim },
-                { translateY: slideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [50, 0]
-                  })
-                }
-              ],
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={isDarkMode 
-              ? [colors.primary, colors.primaryContainer] 
-              : [colors.primary, colors.primaryFixed]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradientHeader}
-          >
-            <View style={styles.modalHeader}>
-              <View style={styles.titleContainer}>
-                <FontAwesome5 name="user-edit" size={24} color={colors.onPrimary} />
-                <Text style={[styles.modalTitle, { color: colors.onPrimary }]}>
-                  {showPasswordChange ? 'Đổi mật khẩu' : 'Chỉnh sửa hồ sơ'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.closeButton, { backgroundColor: colors.onPrimary + '20' }]}
-                onPress={onClose}
-              >
-                <Ionicons name="close-circle" size={24} color={colors.onPrimary} />
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-          
-          <View style={[styles.modalBody, { backgroundColor: colors.surfaceContainerHigh }]}>
-            {!showPasswordChange ? (
-              <>
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputLabelContainer}>
-                    <FontAwesome5 name="user-circle" size={20} color={colors.primary} />
-                    <Text style={[styles.inputLabel, { color: colors.primary }]}>Tên</Text>
-                  </View>
-                  <View style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: colors.surfaceContainer,
-                      borderColor: error ? colors.error : colors.primary,
-                    }
-                  ]}>
-                    <FontAwesome5 name="user" size={16} color={colors.primary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: colors.onSurface,
-                        },
-                      ]}
-                      value={name}
-                      onChangeText={setName}
-                      placeholder="Nhập tên của bạn"
-                      placeholderTextColor={colors.onSurfaceVariant}
-                    />
-                  </View>
-                  {error && (
-                    <View style={styles.errorContainer}>
-                      <Ionicons name="alert-circle" size={16} color={colors.error} />
-                      <Text style={[styles.errorText, { color: colors.error }]}>
-                        {error}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.passwordChangeButton, { backgroundColor: colors.surfaceContainer }]}
-                  onPress={() => setShowPasswordChange(true)}
-                >
-                  <FontAwesome5 name="key" size={16} color={colors.primary} />
-                  <Text style={[styles.passwordChangeText, { color: colors.primary }]}>
-                    Đổi mật khẩu
-                  </Text>
-                  <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-                </TouchableOpacity>
-
-                <View style={styles.modalButtons}>
-                  <LinearGradient
-                    colors={isDarkMode 
-                      ? [colors.primary, colors.primaryContainer] 
-                      : [colors.primary, colors.primaryFixed]
-                    }
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[
-                      styles.modalButton,
-                      { opacity: isLoading ? 0.7 : 1 }
-                    ]}
-                  >
-                    <TouchableOpacity
-                      style={styles.gradientButton}
-                      onPress={handleUpdate}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <ActivityIndicator color={colors.onPrimary} />
-                      ) : (
-                        <>
-                          <FontAwesome5 name="save" size={20} color={colors.onPrimary} />
-                          <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
-                            Lưu
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </LinearGradient>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputLabelContainer}>
-                    <FontAwesome5 name="lock" size={20} color={colors.primary} />
-                    <Text style={[styles.inputLabel, { color: colors.primary }]}>Mật khẩu hiện tại</Text>
-                  </View>
-                  <View style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: colors.surfaceContainer,
-                      borderColor: passwordError ? colors.error : colors.primary,
-                    }
-                  ]}>
-                    <FontAwesome5 name="key" size={16} color={colors.primary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: colors.onSurface,
-                        },
-                      ]}
-                      value={currentPassword}
-                      onChangeText={setCurrentPassword}
-                      placeholder="Nhập mật khẩu hiện tại"
-                      placeholderTextColor={colors.onSurfaceVariant}
-                      secureTextEntry
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputLabelContainer}>
-                    <FontAwesome5 name="lock" size={20} color={colors.primary} />
-                    <Text style={[styles.inputLabel, { color: colors.primary }]}>Mật khẩu mới</Text>
-                  </View>
-                  <View style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: colors.surfaceContainer,
-                      borderColor: passwordError ? colors.error : colors.primary,
-                    }
-                  ]}>
-                    <FontAwesome5 name="key" size={16} color={colors.primary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: colors.onSurface,
-                        },
-                      ]}
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                      placeholder="Nhập mật khẩu mới"
-                      placeholderTextColor={colors.onSurfaceVariant}
-                      secureTextEntry
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputLabelContainer}>
-                    <FontAwesome5 name="lock" size={20} color={colors.primary} />
-                    <Text style={[styles.inputLabel, { color: colors.primary }]}>Xác nhận mật khẩu</Text>
-                  </View>
-                  <View style={[
-                    styles.inputWrapper,
-                    {
-                      backgroundColor: colors.surfaceContainer,
-                      borderColor: passwordError ? colors.error : colors.primary,
-                    }
-                  ]}>
-                    <FontAwesome5 name="key" size={16} color={colors.primary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: colors.onSurface,
-                        },
-                      ]}
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      placeholder="Nhập lại mật khẩu mới"
-                      placeholderTextColor={colors.onSurfaceVariant}
-                      secureTextEntry
-                    />
-                  </View>
-                  {passwordError && (
-                    <View style={styles.errorContainer}>
-                      <Ionicons name="alert-circle" size={16} color={colors.error} />
-                      <Text style={[styles.errorText, { color: colors.error }]}>
-                        {passwordError}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalButton,
-                      styles.cancelButton,
-                      { 
-                        borderColor: colors.outline,
-                        backgroundColor: isDarkMode ? colors.surfaceContainer : colors.surfaceContainerLow
-                      }
-                    ]}
-                    onPress={() => {
-                      setShowPasswordChange(false);
-                      setCurrentPassword('');
-                      setNewPassword('');
-                      setConfirmPassword('');
-                      setPasswordError(null);
-                    }}
-                  >
-                    <Ionicons name="arrow-back" size={20} color={colors.onSurface} />
-                    <Text style={[styles.modalButtonText, { color: colors.onSurface }]}>
-                      Quay lại
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <LinearGradient
-                    colors={isDarkMode 
-                      ? [colors.primary, colors.primaryContainer] 
-                      : [colors.primary, colors.primaryFixed]
-                    }
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.modalButton}
-                  >
-                    <TouchableOpacity
-                      style={styles.gradientButton}
-                      onPress={handlePasswordChange}
-                    >
-                      <FontAwesome5 name="save" size={20} color={colors.onPrimary} />
-                      <Text style={[styles.modalButtonText, { color: colors.onPrimary }]}>
-                        Lưu
-                      </Text>
-                    </TouchableOpacity>
-                  </LinearGradient>
-                </View>
-              </>
-            )}
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-};
+// EditProfileModal đã được thay thế bằng chuyển hướng đến trang Profile
 
 const SettingsModal = ({ visible, onClose, colors }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -620,7 +217,6 @@ const SettingsModal = ({ visible, onClose, colors }) => {
   const dispatch = useDispatch();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [language, setLanguage] = useState('vi');
 
   React.useEffect(() => {
     if (visible) {
@@ -690,8 +286,8 @@ const SettingsModal = ({ visible, onClose, colors }) => {
           ]}
         >
           <LinearGradient
-            colors={isDarkMode 
-              ? [colors.primary, colors.primaryContainer] 
+            colors={isDarkMode
+              ? [colors.primary, colors.primaryContainer]
               : [colors.primary, colors.primaryFixed]
             }
             start={{ x: 0, y: 0 }}
@@ -713,7 +309,7 @@ const SettingsModal = ({ visible, onClose, colors }) => {
               </TouchableOpacity>
             </View>
           </LinearGradient>
-          
+
           <View style={[styles.modalBody, { backgroundColor: colors.surfaceContainerHigh }]}>
             <View style={styles.settingsContainer}>
               {/* Chế độ tối */}
@@ -767,7 +363,7 @@ const SettingsModal = ({ visible, onClose, colors }) => {
                 />
               </View>
 
-          
+
 
               {/* Phiên bản */}
               {/* <View style={styles.versionContainer}>
@@ -785,18 +381,15 @@ const SettingsModal = ({ visible, onClose, colors }) => {
 
 const SettingsMenu = ({ closeMenu }) => {
   const { colors } = useTheme();
-  const { logout, userToken, userInfo, setUserInfo } = useContext(AuthContext);
+  const { logout, userToken, userInfo } = useContext(AuthContext);
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const navigation = useNavigation();
-  const dispatch = useDispatch();
+
   const [showAboutUs, setShowAboutUs] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const toggleSwitch = () => {
-    dispatch(toggleTheme());
-  };
+
 
   const handleNavigation = (route, params = {}) => {
     closeMenu && closeMenu();
@@ -816,11 +409,12 @@ const SettingsMenu = ({ closeMenu }) => {
   const handleProfilePress = () => {
     if (userToken) {
       closeMenu && closeMenu();
-      setShowEditProfile(true);
+      // Navigate to the Profile screen with the user's ID instead of showing the edit profile modal
+      navigation.navigate('Profile', { userId: userInfo?.id });
     } else {
       closeMenu && closeMenu();
       Alert.alert(
-        "Đăng nhập", 
+        "Đăng nhập",
         "Bạn cần đăng nhập để xem trang cá nhân",
         [
           { text: "Hủy", style: "cancel" },
@@ -830,9 +424,7 @@ const SettingsMenu = ({ closeMenu }) => {
     }
   };
 
-  const handleProfileUpdate = (updatedProfile) => {
-    setUserInfo(updatedProfile);
-  };
+
 
   return (
     <View style={[styles.settingsMenu, {backgroundColor: colors.surfaceContainerHigh, shadowColor: colors.primaryShadow}]}>
@@ -841,7 +433,7 @@ const SettingsMenu = ({ closeMenu }) => {
         onClose={() => setShowSettings(false)}
         colors={colors}
       />
-      
+
       <ModalComponent
         visible={showAboutUs}
         onClose={() => setShowAboutUs(false)}
@@ -849,7 +441,7 @@ const SettingsMenu = ({ closeMenu }) => {
         content="English Social là nền tảng học tiếng Anh xã hội hóa. Chúng tôi cung cấp không gian để người dùng chia sẻ kiến thức, mẹo học tiếng Anh và các tài nguyên học tập chất lượng."
         colors={colors}
       />
-      
+
       <ModalComponent
         visible={showFeedback}
         onClose={() => setShowFeedback(false)}
@@ -858,79 +450,79 @@ const SettingsMenu = ({ closeMenu }) => {
         colors={colors}
       />
 
-      <EditProfileModal
-        visible={showEditProfile}
-        onClose={() => setShowEditProfile(false)}
-        userInfo={userInfo}
+      {/* EditProfileModal đã được thay thế bằng chuyển hướng đến trang Profile */}
+
+      <MenuItem
         colors={colors}
-        onUpdate={handleProfileUpdate}
+        text="Về chúng tôi"
+        func={handleAboutUs}
+        icon={<FontAwesome5 name="info-circle" size={22} color={colors.primary} style={styles.menuItemImage} />}
       />
 
-      <MenuItem 
-        colors={colors} 
-        imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")} 
-        text="Về chúng tôi" 
-        func={handleAboutUs} 
-      />
-      
-      <MenuItem 
-        colors={colors} 
-        imageSource={isDarkMode ? require("../../assets/item.png") : require("../../assets/navbaritem.png")} 
-        text="Cài đặt" 
+      <MenuItem
+        colors={colors}
+        text="Cài đặt"
         func={() => {
           closeMenu && closeMenu();
           setShowSettings(true);
-        }} 
+        }}
+        icon={<Ionicons name="settings-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
       />
-      
-      {/* <MenuItem 
-        colors={colors} 
-        imageSource={isDarkMode ? require("../../assets/Frame14.png") : require("../../assets/frame-14.png")} 
-        text="Giỏ hàng" 
-        func={() => handleNavigation("Cart")} 
+
+      {/* <MenuItem
+        colors={colors}
+        text="Giỏ hàng"
+        func={() => handleNavigation("Cart")}
+        icon={<Ionicons name="cart-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
       /> */}
-      
-      <MenuItem 
-        colors={colors} 
-        isDarkMode={isDarkMode} 
-        imageSource={isDarkMode ? require("../../assets/Frame15.png") : require("../../assets/frame-141.png")} 
-        text="Phản hồi" 
-        func={handleFeedback} 
+
+      <MenuItem
+        colors={colors}
+        isDarkMode={isDarkMode}
+        text="Phản hồi"
+        func={handleFeedback}
+        icon={<Ionicons name="chatbox-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
       />
-      
+
       {userToken != null && userInfo && (
-        <MenuItem 
-          colors={colors} 
-          isDarkMode={isDarkMode} 
-          imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")} 
-          text={userInfo?.name || 'Người dùng'} 
+        <MenuItem
+          colors={colors}
+          isDarkMode={isDarkMode}
+          text={userInfo?.name || 'Người dùng'}
           func={handleProfilePress}
+          icon={<Ionicons name="person-outline" size={22} color={colors.primary} style={styles.menuItemImage} />}
         />
       )}
-      
+
       {userToken == null ? (
         <View style={[styles.flexRow, styles.flexRowButton]}>
-          <ButtonPrimary text="Đăng nhập"
+          <ButtonPrimary
+            text="Đăng nhập"
             textSize={FontSize.labelLargeBold_size}
             textMargin={8}
             buttonPrimaryFlex={1}
+            icon={<Ionicons name="log-in-outline" size={20} color="#fff" style={{marginRight: 5}} />}
             onPressButton={() => { handleNavigation("SignIn") }}
           />
-          <ButtonPrimary text="Đăng ký"
+          <ButtonPrimary
+            text="Đăng ký"
             textSize={FontSize.labelLargeBold_size}
             buttonPrimaryBackgroundColor={colors.primaryFixed}
             buttonPrimaryMarginLeft={15}
             buttonPrimaryFlex={1}
+            icon={<Ionicons name="person-add-outline" size={20} color="#fff" style={{marginRight: 5}} />}
             onPressButton={() => { handleNavigation("SignUp") }}
           />
         </View>
       ) : (
         <View style={[styles.flexRow, styles.flexRowButton]}>
-          <ButtonPrimary text="Đăng xuất"
+          <ButtonPrimary
+            text="Đăng xuất"
             textSize={FontSize.labelLargeBold_size}
             textMargin={8}
             buttonPrimaryFlex={1}
-            onPressButton={() => { 
+            icon={<Ionicons name="log-out-outline" size={20} color="#fff" style={{marginRight: 5}} />}
+            onPressButton={() => {
               try {
                 logout();
                 closeMenu && closeMenu();
@@ -941,7 +533,7 @@ const SettingsMenu = ({ closeMenu }) => {
           />
         </View>
       )}
-      
+
       {/* <View style={styles.themeToggleContainer}>
         <Text style={[styles.menuItemText, {color: colors.onSurface, marginBottom: 5}]}>
           {isDarkMode ? 'Chế độ tối' : 'Chế độ sáng'}
@@ -958,10 +550,14 @@ const SettingsMenu = ({ closeMenu }) => {
   );
 };
 
-const MenuItem = ({ colors, imageSource, text, func }) => {
+const MenuItem = ({ colors, imageSource, text, func, icon }) => {
   return (
     <Pressable onPress={func} style={[styles.menuItem, styles.flexRow]}>
-      <Image style={styles.menuItemImage} source={imageSource} />
+      {icon ? (
+        icon
+      ) : (
+        <Image style={styles.menuItemImage} source={imageSource} />
+      )}
       <Text style={[styles.menuItemText, {color: colors.onSurface}]}>{text}</Text>
     </Pressable>
   );
