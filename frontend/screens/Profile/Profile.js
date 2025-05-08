@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Modal
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useTheme, useNavigation, useRoute } from '@react-navigation/native';
@@ -41,6 +42,12 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('posts'); // posts, achievements, saved
   const [following, setFollowing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [followingList, setFollowingList] = useState([]);
+  const [followingModalVisible, setFollowingModalVisible] = useState(false);
+  const [loadingFollowing, setLoadingFollowing] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followersModalVisible, setFollowersModalVisible] = useState(false);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
@@ -167,6 +174,56 @@ const Profile = () => {
 
   const handlePostPress = (post) => {
     navigation.navigate("PostDetail", { postId: post.id });
+  };
+
+  const fetchFollowingList = async () => {
+    if (!userId) return;
+
+    setLoadingFollowing(true);
+    try {
+      const config = userToken ? {
+        headers: { Authorization: `Bearer ${userToken}` }
+      } : {};
+
+      const response = await axios.get(`${baseUrl}/follows/following/${userId}`, config);
+      console.log('Following list:', response.data);
+
+      if (response.data && response.data.following) {
+        setFollowingList(response.data.following);
+      }
+
+      setFollowingModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching following list:', error);
+      Alert.alert('Error', 'Could not load following list');
+    } finally {
+      setLoadingFollowing(false);
+    }
+  };
+
+  const fetchFollowersList = async () => {
+    if (!userId) return;
+
+    setLoadingFollowers(true);
+    try {
+      const config = userToken ? {
+        headers: { Authorization: `Bearer ${userToken}` }
+      } : {};
+
+      const response = await axios.get(`${baseUrl}/follows/followers/${userId}`, config);
+      console.log('Followers list:', response.data);
+
+      if (response.data && response.data.followers) {
+        setFollowersList(response.data.followers);
+      }
+
+      setFollowersModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching followers list:', error);
+      Alert.alert('Error', 'Could not load followers list');
+    } finally {
+      setLoadingFollowers(false);
+    }
   };
 
   const renderPostItem = ({ item }) => {
@@ -333,6 +390,92 @@ const Profile = () => {
     );
   };
 
+  const renderFollowingItem = ({ item }) => {
+    return (
+      <View style={styles.followingItem}>
+        <View style={styles.followingUserInfo}>
+          <Image
+            source={
+              item?.avatar
+                ? { uri: item.avatar }
+                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item?.name || 'User')}&background=random` }
+            }
+            style={styles.followingAvatar}
+          />
+          <View style={styles.followingNameContainer}>
+            <Text style={[styles.followingName, { color: colors.onSurface }]}>{item.name}</Text>
+            <Text style={[styles.followingUsername, { color: colors.onSurfaceVarient }]}>@{item.username}</Text>
+            <Text style={[styles.followingBio, { color: isDarkMode ? '#aaa' : '#666' }]} numberOfLines={1}>
+              {item.bio || 'English learning enthusiast'}
+            </Text>
+          </View>
+        </View>
+
+        {userInfo?.id !== item.id && (
+          <TouchableOpacity
+            style={[
+              styles.followButton,
+              {
+                backgroundColor: 'transparent',
+                borderColor: colors.primary,
+                borderWidth: 1
+              }
+            ]}
+            onPress={() => {
+              setFollowingModalVisible(false); // Đóng modal trước khi chuyển trang
+              navigation.navigate('Profile', { userId: item.id });
+            }}
+          >
+            <Text style={[styles.followButtonText, { color: colors.primary }]}>View</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderFollowersItem = ({ item }) => {
+    return (
+      <View style={styles.followingItem}>
+        <View style={styles.followingUserInfo}>
+          <Image
+            source={
+              item?.avatar
+                ? { uri: item.avatar }
+                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item?.name || 'User')}&background=random` }
+            }
+            style={styles.followingAvatar}
+          />
+          <View style={styles.followingNameContainer}>
+            <Text style={[styles.followingName, { color: colors.onSurface }]}>{item.name}</Text>
+            <Text style={[styles.followingUsername, { color: colors.onSurfaceVarient }]}>@{item.username}</Text>
+            <Text style={[styles.followingBio, { color: isDarkMode ? '#aaa' : '#666' }]} numberOfLines={1}>
+              {item.bio || 'English learning enthusiast'}
+            </Text>
+          </View>
+        </View>
+
+        {userInfo?.id !== item.id && (
+          <TouchableOpacity
+            style={[
+              styles.followButton,
+              {
+                backgroundColor: 'transparent',
+                borderColor: colors.primary,
+                borderWidth: 1
+              }
+            ]}
+            onPress={() => {
+              setFollowersModalVisible(false); // Đóng modal trước khi chuyển trang
+              navigation.navigate('Profile', { userId: item.id });
+            }}
+          >
+            <Text style={[styles.followButtonText, { color: colors.primary }]}>View</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: darkBackground }]}>
@@ -357,8 +500,98 @@ const Profile = () => {
     );
   }
 
+  // Following Modal
+  const renderFollowingModal = () => {
+    return (
+      <Modal
+        visible={followingModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setFollowingModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1a1a1a' : '#fff' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.onSurface }]}>Following</Text>
+              <TouchableOpacity onPress={() => setFollowingModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingFollowing ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : followingList.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Feather name="users" size={48} color={isDarkMode ? '#555' : '#ccc'} />
+                <Text style={[styles.emptyText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
+                  No following users yet
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={followingList}
+                renderItem={renderFollowingItem}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={styles.followingListContainer}
+                showsVerticalScrollIndicator={false}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // Followers Modal
+  const renderFollowersModal = () => {
+    return (
+      <Modal
+        visible={followersModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setFollowersModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1a1a1a' : '#fff' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.onSurface }]}>Followers</Text>
+              <TouchableOpacity onPress={() => setFollowersModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.onSurface} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingFollowers ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : followersList.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Feather name="users" size={48} color={isDarkMode ? '#555' : '#ccc'} />
+                <Text style={[styles.emptyText, { color: isDarkMode ? '#aaa' : colors.onSurfaceVarient }]}>
+                  No followers yet
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={followersList}
+                renderItem={renderFollowersItem}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={styles.followingListContainer}
+                showsVerticalScrollIndicator={false}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: darkBackground }]}>
+      {renderFollowingModal()}
+      {renderFollowersModal()}
       <View style={[styles.customHeader, { backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -426,22 +659,22 @@ const Profile = () => {
                 Posts
               </Text>
             </View>
-            <View style={styles.statBlock}>
+            <TouchableOpacity style={styles.statBlock} onPress={fetchFollowersList}>
               <Text style={[styles.statNumber, { color: colors.onSurface }]}>
                 {profileData?.totalFollowers || 0}
               </Text>
               <Text style={[styles.statLabel, { color: isDarkMode ? '#aaa' : '#777' }]}>
                 Followers
               </Text>
-            </View>
-            <View style={styles.statBlock}>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.statBlock} onPress={fetchFollowingList}>
               <Text style={[styles.statNumber, { color: colors.onSurface }]}>
                 {profileData?.totalFollowing || 0}
               </Text>
               <Text style={[styles.statLabel, { color: isDarkMode ? '#aaa' : '#777' }]}>
                 Following
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.actionButtons}>
@@ -610,6 +843,91 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '80%',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+  },
+  followingListContainer: {
+    paddingBottom: 20,
+  },
+  followingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(150, 150, 150, 0.1)',
+  },
+  followingUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  followingAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  followingNameContainer: {
+    flex: 1,
+  },
+  followingName: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 2,
+  },
+  followingUsername: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    marginBottom: 2,
+  },
+  followingBio: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+  },
+  followButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  followButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
   },
   customHeader: {
     flexDirection: "row",
