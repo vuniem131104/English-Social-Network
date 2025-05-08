@@ -491,7 +491,7 @@ const SettingsMenu = ({ closeMenu }) => {
           isDarkMode={isDarkMode}
           text={userInfo?.name || 'Người dùng'}
           func={handleProfilePress}
-          imageSource={isDarkMode ? require("../../assets/Explore2.png") : require("../../assets/explore.png")}
+          imageSource={isDarkMode ? require("../../assets/Untitled-1.png") : require("../../assets/default-avatar.png")}
         />
       )}
 
@@ -499,7 +499,7 @@ const SettingsMenu = ({ closeMenu }) => {
         <View style={[styles.flexRow, styles.flexRowButton]}>
           <ButtonPrimary
             text="Đăng nhập"
-            textSize={FontSize.labelLargeBold_size}
+            textSize={13}
             textMargin={8}
             buttonPrimaryFlex={1}
             icon={<Ionicons name="log-in-outline" size={20} color="#fff" style={{marginRight: 5}} />}
@@ -507,11 +507,11 @@ const SettingsMenu = ({ closeMenu }) => {
           />
           <ButtonPrimary
             text="Đăng ký"
-            textSize={FontSize.labelLargeBold_size}
+            textSize={13}
             buttonPrimaryBackgroundColor={colors.primaryFixed}
             buttonPrimaryMarginLeft={15}
             buttonPrimaryFlex={1}
-            icon={<Ionicons name="person-add-outline" size={20} color="#fff" style={{marginRight: 5}} />}
+            icon={<Ionicons name="person-add-outline" size={17} color="#fff" style={{marginRight: 5}} />}
             onPressButton={() => { handleNavigation("SignUp") }}
           />
         </View>
