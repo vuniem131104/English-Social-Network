@@ -11,6 +11,7 @@ import { AuthContext } from "../../context/authContext";
 import axios from "axios";
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { baseUrl } from "../../services/api";
 
 const ModalComponent = ({ visible, onClose, title, content, colors }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -272,7 +273,7 @@ const EditProfileModal = ({ visible, onClose, userInfo, colors, onUpdate }) => {
     setError(null);
 
     try {
-      const response = await axios.put('https://engnet.onrender.com/profile/edit', 
+      const response = await axios.put(`${baseUrl}/profile/edit`, 
         {
           bio: null,
           name: name.trim(),
