@@ -398,7 +398,7 @@ const Profile = () => {
             source={
               item?.avatar
                 ? { uri: item.avatar }
-                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item?.name || 'User')}&background=random` }
+                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item?.name || 'User')}&background=a0a0a0` }
             }
             style={styles.followingAvatar}
           />
@@ -441,7 +441,7 @@ const Profile = () => {
             source={
               item?.avatar
                 ? { uri: item.avatar }
-                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item?.name || 'User')}&background=random` }
+                : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(item?.name || 'User')}&background=a0a0a0` }
             }
             style={styles.followingAvatar}
           />
@@ -476,29 +476,6 @@ const Profile = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: darkBackground }]}>
-        <View style={[styles.customHeader, { backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer }]}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={[styles.backButton, { backgroundColor: colors.primary }]}
-          >
-            <Ionicons name="arrow-back" size={20} color="#fff" />
-          </TouchableOpacity>
-
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
-            Profile
-          </Text>
-
-          <View style={styles.placeholder} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Following Modal
   const renderFollowingModal = () => {
@@ -627,11 +604,11 @@ const Profile = () => {
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               <Image
-                key={`avatar-${profileData.avatar}`}
+                key={`avatar-${profileData?.avatar}`}
                 source={
                   profileData?.avatar
                     ? { uri: profileData.avatar }
-                    : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || 'User')}&background=random` }
+                    : { uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || 'User')}&background=a0a0a0` }
                 }
                 style={styles.avatar}
                 resizeMode="cover"
@@ -711,7 +688,7 @@ const Profile = () => {
                   onPress={handleFollow}
                 >
                   <Feather
-                    name={following ? "user-check" : "user-plus"}
+                    name={following ? "user-check" : "user-check"}
                     size={16}
                     color={following ? colors.primary : "#fff"}
                   />
@@ -721,7 +698,7 @@ const Profile = () => {
                       { color: following ? colors.primary : "#fff" }
                     ]}
                   >
-                    {following ? "Following" : "Follow"}
+                    {following ? "Following" : "Following"}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity

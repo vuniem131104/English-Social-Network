@@ -12,13 +12,14 @@ import {
   Alert
 } from "react-native";
 import { useSelector } from "react-redux";
-import { useTheme } from "@react-navigation/native";
+import { useTheme, useNavigation } from "@react-navigation/native";
 import { Ionicons } from '@expo/vector-icons';
 import { baseUrl } from "../services/api";
 import { AuthContext } from "../context/authContext";
 import axios from "axios";
 import CustomToast from "../components/CustomToast";
 import ConfirmationModal from "../components/ConfirmationModal";
+import Profile from "../screens/Profile/Profile"
 
 // Placeholder data for search results
 const searchData = [
@@ -37,14 +38,6 @@ const searchData = [
     avatar: null,
     totalFollowing: 85,
     totalFollowers: 10300
-  },
-  {
-    id: 102,
-    username: "_vuniem_05",
-    name: "LE HOANG VU",
-    avatar: null,
-    totalFollowing: 102,
-    totalFollowers: 79
   },
   {
     id: 103,
@@ -75,6 +68,16 @@ const searchData = [
     username: "vanphuc",
     name: "NGUYEN VAN PHUC",
     avatar: null,
+    totalFollowing: 102,
+    totalFollowers: 79
+  },
+  {
+    id: 107,
+    username: "levu",
+    name: "Le Tuan Vu",
+    avatar: null,
+    totalFollowing: 102,
+    totalFollowers: 79
   }
 ];
 
@@ -82,7 +85,7 @@ const searchData = [
 const SearchScreen = () => {
   const isDarkMode = useSelector(state => state.theme.isDarkMode);
   const { colors } = useTheme();
-
+  const navigation = useNavigation();
   const [ searchTerm, setSearchTerm ] = useState('');
   const [ searchResults, setSearchResults ] = useState([]);
   const [ loading, setLoading ] = useState(false);
@@ -149,6 +152,12 @@ const SearchScreen = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUserPress = (userId) => {
+    navigation.navigate('Profile', { 
+      userId: userId
+    });
   };
 
   // Hàm theo dõi người dùng
@@ -265,7 +274,11 @@ const SearchScreen = () => {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.userContainer}>
+    <TouchableOpacity 
+      style={styles.userContainer}
+      onPress={() => handleUserPress(item.id)}
+      activeOpacity={0.7}
+    >
       <Image
         source={item?.avatar
             ? { uri: item.avatar }
@@ -287,7 +300,10 @@ const SearchScreen = () => {
             backgroundColor: following.includes(item.id) ? 'transparent' : colors.primary,
           }
         ]}
-        onPress={() => handleFollow(item.id, item.username)}
+        onPress={(e) => {
+          e.stopPropagation(); // Prevent triggering the parent TouchableOpacity
+          handleFollow(item.id, item.username);
+        }}
       >
         <Text
           style={[
@@ -300,7 +316,7 @@ const SearchScreen = () => {
           {following.includes(item.id) ? 'Đang theo dõi' : 'Theo dõi'}
         </Text>
       </TouchableOpacity>)}
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFooter = () => {
@@ -374,8 +390,17 @@ const SearchStack = createNativeStackNavigator();
 
 const SearchStackScreen = () => {
   return (
-    <SearchStack.Navigator screenOptions={{ headerShown: false }}>
-      <SearchStack.Screen name="SearchScreen" component={SearchScreen} />
+    <SearchStack.Navigator>
+      <SearchStack.Screen 
+        name="SearchScreen" 
+        component={SearchScreen} 
+        options={{ headerShown: false }}
+      />
+      <SearchStack.Screen 
+        name="Profile" 
+        component={Profile} 
+        options={{ headerShown: false }}
+      />
     </SearchStack.Navigator>
   );
 };

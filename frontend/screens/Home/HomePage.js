@@ -177,8 +177,10 @@ const HomePage = () => {
     if (!viewCount) return { repost: 0, share: 0 };
 
     // Generate random numbers between 0 and viewCount
-    const repost = Math.floor(Math.random() * viewCount);
-    const share = Math.floor(Math.random() * viewCount);
+    // const repost = Math.floor(Math.random() * viewCount);
+    // const share = Math.floor(Math.random() * viewCount);
+    const repost = 1;
+    const share = 1;
 
     return { repost, share };
   };

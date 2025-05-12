@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Inter-Bold',
   },
   placeholder: {
     width: 35,
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     marginBottom: 5,
-    fontFamily: 'PlayfairDisplay-Medium',
+    fontFamily: 'Inter-Medium',
   },
   input: {
     height: 45,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
   textArea: {
     height: 100,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     fontSize: 16,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Inter-Regular',
   },
 });
 

@@ -22,56 +22,49 @@ import PostDetail from "../screens/Home/PostDetail";
 // Placeholder data for activity feed
 const activityData = [
   {
-    id: '1',
-    type: 'new',
-    username: 'nguyenhanh02',
-    userAvatar: 'https://ui-avatars.com/api/?name=NH',
-    timeAgo: '2 giờ',
-    content: 'Sao t bắt chuyện nghiệp rồi mà vẫn không xem được phần này các mom ơi cíuuuuuuu',
-    likes: 224,
-    comments: 12,
-    isForYou: true
+    id: 25,
+    author: {
+      id: 2,
+      username: "username1",
+      name: "Bùi Hòa Minzy",
+      avatar: "https://picsum.photos/seed/avatar1/400/400"
+    },
+    title: "Luyện phát âm Eng chuẩn như Tây? K khó như bạn nghĩ! 😉",
+    description: "Nói Eng mà giọng đặc sệt VN là mất điểm lắm nha. Muốn chuẩn thì phải học IPA (bảng phiên âm á), nghe Tây nói rồi nhại theo (shadowing). Dùng mấy cái từ điển online có loa bấm nghe thử. Luyện mấy âm khó như /th/, /r/, /l/ với âm cuối (ending sounds). Chăm chỉ là đc à!",
+    mainImage: "",
+    totalView: 50,
+    totalComment: 13,
+    totalLike: 26,
+    steps: [
+      "1. Học IPA.",
+      "2. Shadowing (Nhại theo).",
+      "3. Check từ điển online (nghe phát âm).",
+      "4. Tập trung âm khó + âm cuối.",
+      "5. Ghi âm giọng mình nghe lại."
+    ],
+    createdAt: "2025-05-01T20:00:00.000Z",
+    updatedAt: "2025-05-08T09:38:15.000Z"
   },
   {
-    id: '2',
-    type: 'previous',
-    username: 'nguoiyeutoicuckycute',
-    userAvatar: 'https://ui-avatars.com/api/?name=NY',
-    timeAgo: '1 ngày',
-    content: 'Anh tắm với con nào...',
-    likes: 6100,
-    comments: 72,
-    shares: 299,
-    views: 488,
-    isForYou: true
-  },
-  {
-    id: '3',
-    type: 'previous',
-    username: 'kqunhy.lt',
-    userAvatar: 'https://ui-avatars.com/api/?name=KQ',
-    timeAgo: '2 ngày',
-    content: 'vô phúc làm môi có ny cỡ này',
-    likes: 2900,
-    comments: 215,
-    shares: 164,
-    views: 322,
-    isForYou: true
-  },
-  {
-    id: '4',
-    type: 'previous',
-    username: 'ameliee_official',
-    userAvatar: 'https://ui-avatars.com/api/?name=AM',
-    timeAgo: '3 ngày',
-    content: 'New post',
-    likes: 3400,
-    comments: 98,
-    shares: 120,
-    views: 510,
-    isForYou: true
+    id: 156,
+    author: {
+      id: 2,
+      username: "username1",
+      name: "Bùi Hòa Minzy",
+      avatar: "https://picsum.photos/seed/avatar1/400/400"
+    },
+    title: "Đi xem concert idol: Cháy hết mình!!! 🔥🎤🎶",
+    description: "Hôm qua đi đu concert idol về mà giờ giọng vẫn còn khàn nè mấy má ơi! Quẩy banh nóc, hát khản cổ, la hét muốn tắt thở lun á. Nhưng mà zuiiiii xỉu! Cảm giác được ở gần idol, được nghe hát live nó phê gì đâu á. Worth it!",
+    mainImage: "https://picsum.photos/seed/post159/600/400",
+    totalView: 22,
+    totalComment: 5,
+    totalLike: 1,
+    steps: [],
+    createdAt: "2025-05-02T12:00:00.000Z",
+    updatedAt: "2025-05-12T07:05:45.000Z"
   }
 ];
+
 
 // Placeholder component cho favorites screen
 const FavoritesScreen = () => {
@@ -129,103 +122,6 @@ const FavoritesScreen = () => {
     navigation.navigate("PostDetail", { postId: post.id });
   };
 
-  const renderActivityItem = ({ item }) => {
-    // Generate random values for repost and share counts that don't exceed view count
-    const viewCount = item.views || 0;
-    const generateRandomCount = (max) => {
-      if (max === 0) return 0;
-      return Math.floor(Math.random() * max);
-    };
-
-    // Use existing shares value if present, otherwise generate random
-    const repostCount = item.shares || generateRandomCount(viewCount);
-    // Generate random share count
-    const shareCount = generateRandomCount(viewCount);
-
-    return (
-      <View style={[styles.activityItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}>
-        <View style={styles.activityHeader}>
-          <View style={styles.userContainer}>
-            <Image
-              source={item.avatar
-            ? { uri: item.avatar }
-            : { uri: `https://ui-avatars.com/api/?name=${item.name?.split(' ').join('+')}&background=a0a0a0`} }
-              style={styles.userAvatar}
-            />
-            <View style={styles.userInfo}>
-              <Text style={[styles.username, { color: colors.onSurface }]}>{item.username}</Text>
-              <Text style={[styles.timeAgo, { color: colors.onSurfaceVarient }]}>{item.timeAgo}</Text>
-              {item.isForYou && (
-                <Text style={[styles.forYouTag, { color: colors.onSurfaceVarient }]}>Được chọn cho bạn</Text>
-              )}
-            </View>
-          </View>
-          <TouchableOpacity>
-            <Feather name="more-horizontal" size={20} color={colors.onSurfaceVarient} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.content}</Text>
-
-        <View style={styles.postStats}>
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
-              <Ionicons name="heart-outline" size={22} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.likes}</Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
-              <Ionicons name="chatbubble-outline" size={22} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.comments}</Text>
-          </View>
-
-          {item.views && (
-            <View style={styles.statItem}>
-              <TouchableOpacity style={styles.statButton}>
-                <Feather name="eye" size={22} color={colors.onSurface} />
-              </TouchableOpacity>
-              <Text style={[styles.statText, { color: colors.onSurface }]}>{item.views}</Text>
-            </View>
-          )}
-
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
-              <Feather name="repeat" size={22} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <TouchableOpacity style={styles.statButton}>
-              <Feather name="share" size={22} color={colors.onSurface} />
-            </TouchableOpacity>
-            <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
-          </View>
-          
-        </View>
-
-        {item.type === 'previous' && item.id === '2' && (
-          <View style={[styles.viewMoreContainer, { backgroundColor: colors.surfaceContainerLow }]}>
-            <Text style={[styles.viewMoreText, { color: colors.onSurface }]}>
-              Bạn muốn xem thêm hay ẩn bớt thông báo tương tự?
-            </Text>
-            <View style={styles.viewMoreButtons}>
-              <TouchableOpacity style={[styles.viewMoreButton, { borderColor: colors.outline }]}>
-                <Text style={[styles.viewMoreButtonText, { color: colors.onSurface }]}>Xem thêm</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.viewMoreButton, { borderColor: colors.outline }]}>
-                <Text style={[styles.viewMoreButtonText, { color: colors.onSurface }]}>Ẩn bớt</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   const renderPostItem = ({ item }) => {
     // Format the date to display like in the image
     const formatDate = (dateString) => {
@@ -255,8 +151,8 @@ const FavoritesScreen = () => {
       return Math.floor(Math.random() * max);
     };
 
-    const repostCount = generateRandomCount(viewCount);
-    const shareCount = generateRandomCount(viewCount);
+    const repostCount = 1;
+    const shareCount = 1;
 
     return (
       <TouchableOpacity
@@ -292,6 +188,108 @@ const FavoritesScreen = () => {
           <View style={styles.statItem}>
             <TouchableOpacity style={styles.statButton}>
               <Ionicons name="heart-outline" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalLike || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Ionicons name="chatbubble-outline" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalComment || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="eye" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalView || 0}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="repeat" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{repostCount}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Feather name="upload" size={18} color={colors.onSurface} />
+            </TouchableOpacity>
+            <Text style={[styles.statText, { color: colors.onSurface }]}>{shareCount}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderPostItem_v2 = ({ item }) => {
+    // Format the date to display like in the image
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+        if (diffHours === 0) {
+          const diffMinutes = Math.floor(diffTime / (1000 * 60));
+          return `${diffMinutes} phút`;
+        }
+        return `${diffHours} giờ`;
+      } else if (diffDays === 1) {
+        return '1 ngày';
+      } else {
+        return `${diffDays} ngày`;
+      }
+    };
+
+    // Generate random values for repost and share counts that don't exceed view count
+    const viewCount = item.totalView || 0;
+    const generateRandomCount = (max) => {
+      if (max === 0) return 0;
+      return Math.floor(Math.random() * max);
+    };
+
+    const repostCount = 1;
+    const shareCount = 1;
+
+    return (
+      <TouchableOpacity
+        style={[styles.postItem, { borderBottomColor: 'rgba(150, 150, 150, 0.1)' }]}
+        onPress={() => handlePostPress(item)}
+      >
+        <View style={styles.activityHeader}>
+          <View style={styles.userContainer}>
+            <Image
+              source={item.author?.avatar
+            ? { uri: item.author.avatar }
+            : { uri: `https://ui-avatars.com/api/?name=${item.author.name?.split(' ').join('+')}&background=a0a0a0`} }
+              style={styles.userAvatar}
+            />
+            <View style={styles.userInfo}>
+              <Text style={[styles.username, { color: colors.onSurface }]}>{item.author.name}</Text>
+              <View style={styles.timeContainer}>
+                <Text style={[styles.timeAgo, { color: colors.onSurfaceVarient }]}>
+                  {formatDate(item.createdAt)}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.moreButton}>
+            <Feather name="more-horizontal" size={18} color={colors.onSurfaceVarient} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.postTitle, { color: colors.onSurface }]}>{item.title}</Text>
+        <Text style={[styles.postDescription, { color: colors.onSurfaceVarient }]}>{item.description}</Text>
+
+        <View style={styles.postStats}>
+          <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statButton}>
+              <Ionicons name="heart" size={18} color={'#BE0303'} />
             </TouchableOpacity>
             <Text style={[styles.statText, { color: colors.onSurface }]}>{item.totalLike || 0}</Text>
           </View>
@@ -365,7 +363,7 @@ const FavoritesScreen = () => {
               { color: activeTab === 'follows' ? colors.onSurface : colors.onSurfaceVarient }
             ]}
           >
-            Lượt theo dõi
+            Lượt thích
           </Text>
         </TouchableOpacity>
 
@@ -406,7 +404,7 @@ const FavoritesScreen = () => {
 
       {activeTab === 'posts' ? (
         <ScrollView
-          style={styles.postsContainer}
+          style={styles.sectionContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -435,21 +433,10 @@ const FavoritesScreen = () => {
       ) : (
         <>
           <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Mới</Text>
             <FlatList
-              data={activityData.filter(item => item.type === 'new')}
-              renderItem={renderActivityItem}
-              keyExtractor={item => item.id}
-              scrollEnabled={false}
-            />
-          </View>
-
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Trước</Text>
-            <FlatList
-              data={activityData.filter(item => item.type === 'previous')}
-              renderItem={renderActivityItem}
-              keyExtractor={item => item.id}
+              data={activityData}
+              renderItem={renderPostItem_v2}
+              keyExtractor={item => item.id.toString()}
               scrollEnabled={false}
             />
           </View>
