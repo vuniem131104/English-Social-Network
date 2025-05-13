@@ -33,32 +33,32 @@ const PostDetail = () => {
   const { colors } = useTheme();
   const scrollViewRef = React.useRef(null);
 
-  const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMoreComments, setHasMoreComments] = useState(true);
-  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [isLoading, setLoading] = useState(false);
-  const [isCommentsLoading, setCommentsLoading] = useState(false);
-  const [isSubmitting, setSubmitting] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [imageModalVisible, setImageModalVisible] = useState(false);
-  const [aiAnalysisModalVisible, setAiAnalysisModalVisible] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [repostCount, setRepostCount] = useState(0);
-  const [shareCount, setShareCount] = useState(0);
+  const [ post, setPost ] = useState(null);
+  const [ comments, setComments ] = useState([]);
+  const [ currentPage, setCurrentPage ] = useState(1);
+  const [ hasMoreComments, setHasMoreComments ] = useState(true);
+  const [ isLoadingMoreComments, setIsLoadingMoreComments ] = useState(false);
+  const [ newComment, setNewComment ] = useState("");
+  const [ isLoading, setLoading ] = useState(false);
+  const [ isCommentsLoading, setCommentsLoading ] = useState(false);
+  const [ isSubmitting, setSubmitting ] = useState(false);
+  const [ liked, setLiked ] = useState(false);
+  const [ imageModalVisible, setImageModalVisible ] = useState(false);
+  const [ aiAnalysisModalVisible, setAiAnalysisModalVisible ] = useState(false);
+  const [ aiAnalysis, setAiAnalysis ] = useState(null);
+  const [ isLoadingAnalysis, setIsLoadingAnalysis ] = useState(false);
+  const [ showTooltip, setShowTooltip ] = useState(false);
+  const [ repostCount, setRepostCount ] = useState(0);
+  const [ shareCount, setShareCount ] = useState(0);
 
   // Exercise feature states
-  const [exerciseModalVisible, setExerciseModalVisible] = useState(false);
-  const [exerciseDifficultyModalVisible, setExerciseDifficultyModalVisible] = useState(false);
-  const [exerciseData, setExerciseData] = useState(null);
-  const [isLoadingExercises, setIsLoadingExercises] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState(null);
-  const [userAnswers, setUserAnswers] = useState({});
-  const [showResults, setShowResults] = useState(false);
+  const [ exerciseModalVisible, setExerciseModalVisible ] = useState(false);
+  const [ exerciseDifficultyModalVisible, setExerciseDifficultyModalVisible ] = useState(false);
+  const [ exerciseData, setExerciseData ] = useState(null);
+  const [ isLoadingExercises, setIsLoadingExercises ] = useState(false);
+  const [ selectedDifficulty, setSelectedDifficulty ] = useState(null);
+  const [ userAnswers, setUserAnswers ] = useState({});
+  const [ showResults, setShowResults ] = useState(false);
   const exerciseScrollViewRef = React.useRef(null);
 
   const darkBackground = isDarkMode ? '#121212' : colors.surfaceContainer;
@@ -109,7 +109,7 @@ const PostDetail = () => {
     });
 
     return unsubscribe;
-  }, [navigation, postId]);
+  }, [ navigation, postId ]);
 
   // Generate random counts that don't exceed view count
   const generateRandomCounts = (viewCount) => {
@@ -177,13 +177,17 @@ const PostDetail = () => {
       if (response.data && typeof response.data === 'object') {
         const { nextPage, comments: newComments } = response.data;
 
+        const sortedComments = Array.isArray(newComments) ?
+          [ ...newComments ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) :
+          [];
+
         // Update comment list based on whether we're resetting or appending
         if (resetComments) {
-          setComments(Array.isArray(newComments) ? newComments : []);
+          setComments(sortedComments);
         } else {
           setComments(prevComments => [
             ...prevComments,
-            ...(Array.isArray(newComments) ? newComments : [])
+            ...sortedComments
           ]);
         }
 
@@ -441,7 +445,7 @@ const PostDetail = () => {
   const handleAnswerSelect = (questionIndex, answer) => {
     setUserAnswers(prev => ({
       ...prev,
-      [questionIndex]: answer
+      [ questionIndex ]: answer
     }));
   };
 
@@ -463,7 +467,7 @@ const PostDetail = () => {
     let correct = 0;
 
     exerciseData.exercises.forEach((exercise, index) => {
-      if (userAnswers[index] === exercise.correctAnswer) {
+      if (userAnswers[ index ] === exercise.correctAnswer) {
         correct++;
       }
     });
@@ -520,16 +524,16 @@ const PostDetail = () => {
         <Image
           source={item.user?.avatar
             ? { uri: item.user.avatar }
-            : { uri: `https://ui-avatars.com/api/?name=${item.user.name?.split(' ').join('+')}&background=a0a0a0`} }
-          style={[styles.commentAvatar, { borderColor: borderColor }]}
+            : { uri: `https://ui-avatars.com/api/?name=${item.user.name?.split(' ').join('+')}&background=a0a0a0` }}
+          style={[ styles.commentAvatar, { borderColor: borderColor } ]}
         />
         <View style={styles.commentRightSection}>
           <Text style={[ styles.commentAuthor, { color: colors.onSurface } ]}>
             {item.user?.name || 'Anonymous'}
           </Text>
 
-          <View style={[styles.commentContent]}>
-            <Text style={[styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' }]}>
+          <View style={[ styles.commentContent ]}>
+            <Text style={[ styles.commentText, { color: isDarkMode ? '#E0E0E0' : '#303030' } ]}>
               {item.content}
             </Text>
           </View>
@@ -542,7 +546,7 @@ const PostDetail = () => {
               <Ionicons
                 name={item.isLiked ? "heart" : "heart-outline"}
                 size={20}
-                color={item.isLiked ? "#E53935" : isDarkMode ? '#AAA' : '#666'}
+                color={item.isLiked ? "#BE0303" : isDarkMode ? '#bbb' : colors.onSurface}
               />
               <Text style={[ styles.actionText, { color: isDarkMode ? '#AAA' : '#666' } ]}>
                 {item.totalLike || 0}
@@ -571,7 +575,7 @@ const PostDetail = () => {
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.commentTime, { color: secondaryText, marginLeft: 'auto' }]}>
+            <Text style={[ styles.commentTime, { color: secondaryText, marginLeft: 'auto' } ]}>
               {formatDate(item.createdAt)}
             </Text>
           </View>
@@ -591,38 +595,33 @@ const PostDetail = () => {
         headers: { Authorization: `Bearer ${userToken}` }
       };
 
+      // Cập nhật UI trước
+      setComments(prevComments =>
+        prevComments.map(comment =>
+          comment.id === commentId
+            ? {
+              ...comment,
+              isLiked: !isLiked,
+              totalLike: comment.totalLike + (isLiked ? -1 : 1)
+            }
+            : comment
+        )
+      );
+
       if (!isLiked) {
-        try {
-          const response = await axios.post(`${baseUrl}/comment/${commentId}/like`, {}, config);
-          // Refresh comments to update UI
-          getComments(currentPage, true);
-        } catch (error) {
-          if (error.response && error.response.status === 400) {
-            // Comment already liked, refresh to update UI
-            getComments(currentPage, true);
-          } else {
-            throw error;
-          }
-        }
+        await axios.post(`${baseUrl}/comment/like/${commentId}`, {}, config);
       } else {
-        try {
-          const response = await axios.delete(`${baseUrl}/comment/${commentId}/like`, config);
-          // Refresh comments to update UI
-          getComments(currentPage, true);
-        } catch (error) {
-          if (error.response && error.response.status === 400) {
-            // Comment wasn't liked, refresh to update UI
-            getComments(currentPage, true);
-          } else {
-            throw error;
-          }
-        }
+        await axios.delete(`${baseUrl}/comment/like/${commentId}`, config);
       }
+
+      // Nếu muốn đảm bảo dữ liệu đúng từ server thì fetch lại, nhưng không cần thiết nếu không quan trọng:
+      // getComments(currentPage, true);
     } catch (error) {
       console.error("Error updating comment like:", error.message);
-      Alert.alert("Error", "Could not update like. Please try again later.");
+      Alert.alert("Lỗi", "Không thể cập nhật lượt thích. Vui lòng thử lại.");
     }
   };
+
 
   if (isLoading) {
     return (
@@ -650,7 +649,7 @@ const PostDetail = () => {
       {/* Floating Buttons */}
       <View style={styles.floatingButtonContainer}>
         {showTooltip && (
-          <View style={[styles.tooltip, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(70, 70, 70, 0.9)' }]}>
+          <View style={[ styles.tooltip, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.9)' : 'rgba(70, 70, 70, 0.9)' } ]}>
             <Text style={styles.tooltipText}>
               {isLoadingAnalysis ? "Đang phân tích..." : "Phân tích AI"}
             </Text>
@@ -659,11 +658,11 @@ const PostDetail = () => {
 
         {/* Analysis Button */}
         <TouchableOpacity
-          style={[styles.floatingAnalysisButton, {
+          style={[ styles.floatingAnalysisButton, {
             backgroundColor: isLoadingAnalysis ? 'rgba(190, 3, 3, 0.7)' : '#BE0303',
             shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)',
             marginBottom: 10
-          }]}
+          } ]}
           onPress={getAiAnalysis}
           onLongPress={() => setShowTooltip(true)}
           onPressOut={() => setShowTooltip(false)}
@@ -678,10 +677,10 @@ const PostDetail = () => {
 
         {/* Exercise Button */}
         <TouchableOpacity
-          style={[styles.floatingExerciseButton, {
+          style={[ styles.floatingExerciseButton, {
             backgroundColor: isLoadingExercises ? 'rgba(190, 3, 3, 0.7)' : '#BE0303',
             shadowColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)'
-          }]}
+          } ]}
           onPress={() => setExerciseDifficultyModalVisible(true)}
           disabled={isLoadingExercises}
         >
@@ -698,20 +697,20 @@ const PostDetail = () => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.postContainer, {
+        <View style={[ styles.postContainer, {
           backgroundColor: cardBackground,
           borderColor: borderColor
-        }]}>
-          <View style={[styles.postHeader, { borderBottomColor: borderColor }]}>
+        } ]}>
+          <View style={[ styles.postHeader, { borderBottomColor: borderColor } ]}>
             {/* <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <Ionicons name="arrow-back" size={24} color={colors.onSurface} />
             </TouchableOpacity> */}
             <View style={styles.userInfo}>
               <Image
                 source={post.author?.avatar
-            ? { uri: post.author.avatar }
-            : { uri: `https://ui-avatars.com/api/?name=${post.author.name?.split(' ').join('+')}&background=a0a0a0`} }
-                style={[styles.avatar, { borderColor: borderColor }]}
+                  ? { uri: post.author.avatar }
+                  : { uri: `https://ui-avatars.com/api/?name=${post.author.name?.split(' ').join('+')}&background=a0a0a0` }}
+                style={[ styles.avatar, { borderColor: borderColor } ]}
               />
               <View>
                 <Text style={[ styles.username, { color: colors.onSurface } ]}>
@@ -741,7 +740,7 @@ const PostDetail = () => {
           </View>
 
           {post.mainImage && (
-            <View style={[styles.imageContainer, { borderColor: borderColor }]}>
+            <View style={[ styles.imageContainer, { borderColor: borderColor } ]}>
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={() => setImageModalVisible(true)}
@@ -759,7 +758,7 @@ const PostDetail = () => {
           )}
 
           {isGrammarPost && (
-            <View style={[styles.section, {
+            <View style={[ styles.section, {
               backgroundColor: sectionBackground,
               borderColor: borderColor
             } ]}>
@@ -777,7 +776,7 @@ const PostDetail = () => {
             </View>
           )}
 
-          <View style={[styles.postStats, {
+          <View style={[ styles.postStats, {
             borderTopColor: separatorColor,
             borderBottomColor: separatorColor
           } ]}>
@@ -805,20 +804,20 @@ const PostDetail = () => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem} onPress={handleRepostPress}>
               <Feather name="repeat" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface } ]}>
                 {repostCount}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem} onPress={handleSharePost}>
               <Feather name="share" size={24} color={isDarkMode ? '#bbb' : colors.onSurface} />
-              <Text style={[styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface }]}>
+              <Text style={[ styles.statText, { color: isDarkMode ? '#bbb' : colors.onSurface } ]}>
                 {shareCount}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={[styles.commentsSection, {
+        <View style={[ styles.commentsSection, {
           backgroundColor: cardBackground,
           borderColor: borderColor
         } ]}>
@@ -843,10 +842,10 @@ const PostDetail = () => {
 
               {hasMoreComments && (
                 <TouchableOpacity
-                  style={[styles.loadMoreButton, {
+                  style={[ styles.loadMoreButton, {
                     borderColor: borderColor,
                     backgroundColor: isDarkMode ? 'rgba(50, 50, 60, 0.5)' : 'rgba(240, 240, 245, 0.5)'
-                  }]}
+                  } ]}
                   onPress={loadMoreComments}
                   disabled={isLoadingMoreComments}
                 >
@@ -878,12 +877,12 @@ const PostDetail = () => {
         </View>
 
         {/* Comment Input Section */}
-        <View style={[styles.commentInputContainer, {
+        <View style={[ styles.commentInputContainer, {
           backgroundColor: cardBackground,
           borderColor: borderColor
         } ]}>
           <TextInput
-            style={[styles.commentInput, {
+            style={[ styles.commentInput, {
               color: colors.onSurface,
               backgroundColor: isDarkMode ? 'rgba(40, 40, 45, 0.9)' : colors.surfaceContainerLow,
               borderColor: borderColor
@@ -897,9 +896,11 @@ const PostDetail = () => {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              {backgroundColor: isSubmitting
-                ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh)
-                : colors.primary}
+              {
+                backgroundColor: isSubmitting
+                  ? (isDarkMode ? 'rgba(60, 60, 70, 0.9)' : colors.surfaceContainerHigh)
+                  : colors.primary
+              }
             ]}
             onPress={handleAddComment}
             disabled={!newComment.trim() || isSubmitting}
@@ -939,13 +940,13 @@ const PostDetail = () => {
         visible={aiAnalysisModalVisible}
         onRequestClose={() => setAiAnalysisModalVisible(false)}
       >
-        <View style={[styles.analysisModalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <View style={[styles.analysisModalContent, {
+        <View style={[ styles.analysisModalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' } ]}>
+          <View style={[ styles.analysisModalContent, {
             backgroundColor: cardBackground,
             borderColor: borderColor
-          }]}>
+          } ]}>
             <View style={styles.analysisModalHeader}>
-              <Text style={[styles.analysisModalTitle, { color: colors.onSurface }]}>
+              <Text style={[ styles.analysisModalTitle, { color: colors.onSurface } ]}>
                 Phân tích bài viết
               </Text>
               <TouchableOpacity
@@ -960,47 +961,47 @@ const PostDetail = () => {
               {aiAnalysis ? (
                 <View style={styles.analysisContent}>
                   {/* Overview Section */}
-                  <View style={[styles.analysisSection, { borderBottomColor: borderColor }]}>
-                    <Text style={[styles.analysisSectionTitle, { color: colors.primary }]}>
+                  <View style={[ styles.analysisSection, { borderBottomColor: borderColor } ]}>
+                    <Text style={[ styles.analysisSectionTitle, { color: colors.primary } ]}>
                       Tổng quan
                     </Text>
-                    <Text style={[styles.analysisText, { color: colors.onSurface }]}>
+                    <Text style={[ styles.analysisText, { color: colors.onSurface } ]}>
                       {aiAnalysis.overview}
                     </Text>
                   </View>
 
                   {/* English Knowledge Section */}
                   {aiAnalysis.englishKnowledge && aiAnalysis.englishKnowledge.length > 0 && (
-                    <View style={[styles.analysisSection, { borderBottomColor: borderColor }]}>
-                      <Text style={[styles.analysisSectionTitle, { color: colors.primary }]}>
+                    <View style={[ styles.analysisSection, { borderBottomColor: borderColor } ]}>
+                      <Text style={[ styles.analysisSectionTitle, { color: colors.primary } ]}>
                         Kiến thức tiếng Anh
                       </Text>
 
                       {aiAnalysis.englishKnowledge.map((knowledge, index) => (
                         <View key={`knowledge-${index}`} style={styles.knowledgeItem}>
-                          <Text style={[styles.knowledgeTopic, { color: colors.onSurface }]}>
+                          <Text style={[ styles.knowledgeTopic, { color: colors.onSurface } ]}>
                             {knowledge.topic}
                           </Text>
 
-                          <Text style={[styles.analysisSubtitle, { color: colors.primary }]}>
+                          <Text style={[ styles.analysisSubtitle, { color: colors.primary } ]}>
                             Chi tiết:
                           </Text>
                           {knowledge.details.map((detail, detailIndex) => (
                             <View key={`detail-${detailIndex}`} style={styles.bulletPoint}>
-                              <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                              <Text style={[styles.analysisText, { color: colors.onSurface }]}>
+                              <Text style={[ styles.bulletDot, { color: colors.primary } ]}>•</Text>
+                              <Text style={[ styles.analysisText, { color: colors.onSurface } ]}>
                                 {detail}
                               </Text>
                             </View>
                           ))}
 
-                          <Text style={[styles.analysisSubtitle, { color: colors.primary, marginTop: 10 }]}>
+                          <Text style={[ styles.analysisSubtitle, { color: colors.primary, marginTop: 10 } ]}>
                             Ví dụ:
                           </Text>
                           {knowledge.examples.map((example, exampleIndex) => (
                             <View key={`example-${exampleIndex}`} style={styles.bulletPoint}>
-                              <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                              <Text style={[styles.analysisText, { color: colors.onSurface, fontStyle: 'italic' }]}>
+                              <Text style={[ styles.bulletDot, { color: colors.primary } ]}>•</Text>
+                              <Text style={[ styles.analysisText, { color: colors.onSurface, fontStyle: 'italic' } ]}>
                                 {example}
                               </Text>
                             </View>
@@ -1013,14 +1014,14 @@ const PostDetail = () => {
                   {/* Learning Tips Section */}
                   {aiAnalysis.learningTips && aiAnalysis.learningTips.length > 0 && (
                     <View style={styles.analysisSection}>
-                      <Text style={[styles.analysisSectionTitle, { color: colors.primary }]}>
+                      <Text style={[ styles.analysisSectionTitle, { color: colors.primary } ]}>
                         Mẹo học tập
                       </Text>
 
                       {aiAnalysis.learningTips.map((tip, tipIndex) => (
                         <View key={`tip-${tipIndex}`} style={styles.bulletPoint}>
-                          <Text style={[styles.bulletDot, { color: colors.primary }]}>•</Text>
-                          <Text style={[styles.analysisText, { color: colors.onSurface }]}>
+                          <Text style={[ styles.bulletDot, { color: colors.primary } ]}>•</Text>
+                          <Text style={[ styles.analysisText, { color: colors.onSurface } ]}>
                             {tip}
                           </Text>
                         </View>
@@ -1031,7 +1032,7 @@ const PostDetail = () => {
               ) : (
                 <View style={styles.loadingAnalysisContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingAnalysisText, { color: colors.onSurface }]}>
+                  <Text style={[ styles.loadingAnalysisText, { color: colors.onSurface } ]}>
                     Đang phân tích bài viết...
                   </Text>
                 </View>
@@ -1053,33 +1054,33 @@ const PostDetail = () => {
           activeOpacity={1}
           onPress={() => setExerciseDifficultyModalVisible(false)}
         >
-          <View style={[styles.difficultyModalContainer, { backgroundColor: cardBackground }]}>
-            <Text style={[styles.difficultyModalTitle, { color: colors.onSurface }]}>
+          <View style={[ styles.difficultyModalContainer, { backgroundColor: cardBackground } ]}>
+            <Text style={[ styles.difficultyModalTitle, { color: colors.onSurface } ]}>
               Chọn độ khó
             </Text>
 
             <TouchableOpacity
-              style={[styles.difficultyOption, { borderColor: borderColor }]}
+              style={[ styles.difficultyOption, { borderColor: borderColor } ]}
               onPress={() => handleSelectDifficulty(1)}
               disabled={isLoadingExercises}
             >
-              <Text style={[styles.difficultyOptionText, { color: colors.onSurface }]}>Dễ</Text>
+              <Text style={[ styles.difficultyOptionText, { color: colors.onSurface } ]}>Dễ</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.difficultyOption, { borderColor: borderColor }]}
+              style={[ styles.difficultyOption, { borderColor: borderColor } ]}
               onPress={() => handleSelectDifficulty(3)}
               disabled={isLoadingExercises}
             >
-              <Text style={[styles.difficultyOptionText, { color: colors.onSurface }]}>Trung bình</Text>
+              <Text style={[ styles.difficultyOptionText, { color: colors.onSurface } ]}>Trung bình</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.difficultyOption, { borderColor: borderColor }]}
+              style={[ styles.difficultyOption, { borderColor: borderColor } ]}
               onPress={() => handleSelectDifficulty(5)}
               disabled={isLoadingExercises}
             >
-              <Text style={[styles.difficultyOptionText, { color: colors.onSurface }]}>Khó</Text>
+              <Text style={[ styles.difficultyOptionText, { color: colors.onSurface } ]}>Khó</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -1092,13 +1093,13 @@ const PostDetail = () => {
         visible={exerciseModalVisible}
         onRequestClose={() => setExerciseModalVisible(false)}
       >
-        <View style={[styles.exerciseModalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <View style={[styles.exerciseModalContent, {
+        <View style={[ styles.exerciseModalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.5)' } ]}>
+          <View style={[ styles.exerciseModalContent, {
             backgroundColor: cardBackground,
             borderColor: borderColor
-          }]}>
+          } ]}>
             <View style={styles.exerciseModalHeader}>
-              <Text style={[styles.exerciseModalTitle, { color: colors.onSurface }]}>
+              <Text style={[ styles.exerciseModalTitle, { color: colors.onSurface } ]}>
                 Bài tập luyện tập
               </Text>
               <TouchableOpacity
@@ -1115,11 +1116,11 @@ const PostDetail = () => {
               {exerciseData ? (
                 <View style={styles.exerciseContent}>
                   {/* Summary Section */}
-                  <View style={[styles.exerciseSection, { borderBottomColor: borderColor }]}>
-                    <Text style={[styles.exerciseSectionTitle, { color: colors.primary }]}>
+                  <View style={[ styles.exerciseSection, { borderBottomColor: borderColor } ]}>
+                    <Text style={[ styles.exerciseSectionTitle, { color: colors.primary } ]}>
                       Tóm tắt
                     </Text>
-                    <Text style={[styles.exerciseText, { color: colors.onSurface }]}>
+                    <Text style={[ styles.exerciseText, { color: colors.onSurface } ]}>
                       {exerciseData.analysisSummary}
                     </Text>
                   </View>
@@ -1127,20 +1128,20 @@ const PostDetail = () => {
                   {/* Exercises Section */}
                   {exerciseData.exercises && exerciseData.exercises.length > 0 && (
                     <View style={styles.exerciseSection}>
-                      <Text style={[styles.exerciseSectionTitle, { color: colors.primary }]}>
+                      <Text style={[ styles.exerciseSectionTitle, { color: colors.primary } ]}>
                         Câu hỏi trắc nghiệm
                       </Text>
 
                       {exerciseData.exercises.map((exercise, index) => (
-                        <View key={`exercise-${index}`} style={[styles.exerciseItem, {
+                        <View key={`exercise-${index}`} style={[ styles.exerciseItem, {
                           borderColor: borderColor,
                           backgroundColor: isDarkMode ? 'rgba(45, 45, 55, 0.8)' : 'rgba(245, 245, 250, 0.8)'
-                        }]}>
-                          <Text style={[styles.exerciseQuestion, { color: colors.onSurface }]}>
+                        } ]}>
+                          <Text style={[ styles.exerciseQuestion, { color: colors.onSurface } ]}>
                             {index + 1}. {exercise.question}
                           </Text>
 
-                          {Object.entries(exercise.options).map(([key, value]) => (
+                          {Object.entries(exercise.options).map(([ key, value ]) => (
                             <TouchableOpacity
                               key={`option-${index}-${key}`}
                               style={[
@@ -1150,10 +1151,10 @@ const PostDetail = () => {
                                   backgroundColor: showResults
                                     ? key === exercise.correctAnswer
                                       ? 'rgba(76, 175, 80, 0.2)'
-                                      : userAnswers[index] === key && userAnswers[index] !== exercise.correctAnswer
+                                      : userAnswers[ index ] === key && userAnswers[ index ] !== exercise.correctAnswer
                                         ? 'rgba(244, 67, 54, 0.2)'
                                         : isDarkMode ? 'rgba(40, 40, 50, 0.5)' : 'rgba(255, 255, 255, 0.5)'
-                                    : userAnswers[index] === key
+                                    : userAnswers[ index ] === key
                                       ? isDarkMode ? 'rgba(70, 70, 90, 0.8)' : 'rgba(220, 220, 240, 0.8)'
                                       : isDarkMode ? 'rgba(40, 40, 50, 0.5)' : 'rgba(255, 255, 255, 0.5)'
                                 }
@@ -1161,33 +1162,33 @@ const PostDetail = () => {
                               onPress={() => !showResults && handleAnswerSelect(index, key)}
                               disabled={showResults}
                             >
-                              <View style={[styles.optionLetter, {
+                              <View style={[ styles.optionLetter, {
                                 backgroundColor: key === exercise.correctAnswer && showResults
                                   ? '#4CAF50'
-                                  : userAnswers[index] === key && userAnswers[index] !== exercise.correctAnswer && showResults
+                                  : userAnswers[ index ] === key && userAnswers[ index ] !== exercise.correctAnswer && showResults
                                     ? '#F44336'
                                     : colors.primary
-                              }]}>
+                              } ]}>
                                 <Text style={styles.optionLetterText}>{key}</Text>
                               </View>
-                              <Text style={[styles.optionText, { color: colors.onSurface }]}>
+                              <Text style={[ styles.optionText, { color: colors.onSurface } ]}>
                                 {value}
                               </Text>
                               {showResults && key === exercise.correctAnswer && (
                                 <Ionicons name="checkmark-circle" size={20} color="#4CAF50" style={styles.resultIcon} />
                               )}
-                              {showResults && userAnswers[index] === key && key !== exercise.correctAnswer && (
+                              {showResults && userAnswers[ index ] === key && key !== exercise.correctAnswer && (
                                 <Ionicons name="close-circle" size={20} color="#F44336" style={styles.resultIcon} />
                               )}
                             </TouchableOpacity>
                           ))}
 
                           {showResults && (
-                            <View style={[styles.explanationContainer, { borderColor: borderColor }]}>
-                              <Text style={[styles.explanationTitle, { color: colors.primary }]}>
+                            <View style={[ styles.explanationContainer, { borderColor: borderColor } ]}>
+                              <Text style={[ styles.explanationTitle, { color: colors.primary } ]}>
                                 Giải thích:
                               </Text>
-                              <Text style={[styles.explanationText, { color: colors.onSurface }]}>
+                              <Text style={[ styles.explanationText, { color: colors.onSurface } ]}>
                                 {exercise.explanation}
                               </Text>
                             </View>
@@ -1197,10 +1198,10 @@ const PostDetail = () => {
 
                       {!showResults && (
                         <TouchableOpacity
-                          style={[styles.submitButton, {
+                          style={[ styles.submitButton, {
                             backgroundColor: colors.primary,
                             opacity: Object.keys(userAnswers).length === exerciseData.exercises.length ? 1 : 0.7
-                          }]}
+                          } ]}
                           onPress={handleSubmitAnswers}
                           disabled={Object.keys(userAnswers).length !== exerciseData.exercises.length}
                         >
@@ -1212,7 +1213,7 @@ const PostDetail = () => {
                         <>
                           <View style={styles.resultSummaryContainer}>
                             {calculateScore().correct === calculateScore().total ? (
-                              <View style={[styles.congratsContainer, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                              <View style={[ styles.congratsContainer, { backgroundColor: 'rgba(76, 175, 80, 0.1)' } ]}>
                                 <Ionicons name="trophy" size={40} color="#4CAF50" />
                                 <Text style={styles.congratsTitle}>Chúc mừng!</Text>
                                 <Text style={styles.congratsText}>
@@ -1220,7 +1221,7 @@ const PostDetail = () => {
                                 </Text>
                               </View>
                             ) : (
-                              <View style={[styles.tryAgainContainer, { backgroundColor: 'rgba(244, 67, 54, 0.1)' }]}>
+                              <View style={[ styles.tryAgainContainer, { backgroundColor: 'rgba(244, 67, 54, 0.1)' } ]}>
                                 <Ionicons name="sad" size={40} color="#F44336" />
                                 <Text style={styles.tryAgainTitle}>Chia buồn!</Text>
                                 <Text style={styles.tryAgainText}>
@@ -1234,13 +1235,13 @@ const PostDetail = () => {
                           </View>
 
                           <TouchableOpacity
-                            style={[styles.resetButton, { borderColor: colors.primary }]}
+                            style={[ styles.resetButton, { borderColor: colors.primary } ]}
                             onPress={() => {
                               setUserAnswers({});
                               setShowResults(false);
                             }}
                           >
-                            <Text style={[styles.resetButtonText, { color: colors.primary }]}>Làm lại</Text>
+                            <Text style={[ styles.resetButtonText, { color: colors.primary } ]}>Làm lại</Text>
                           </TouchableOpacity>
                         </>
                       )}
@@ -1250,7 +1251,7 @@ const PostDetail = () => {
               ) : (
                 <View style={styles.loadingExerciseContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingExerciseText, { color: colors.onSurface }]}>
+                  <Text style={[ styles.loadingExerciseText, { color: colors.onSurface } ]}>
                     Đang tạo bài tập...
                   </Text>
                 </View>

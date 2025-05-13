@@ -87,7 +87,7 @@ const SearchScreen = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const [ searchTerm, setSearchTerm ] = useState('');
-  const [ searchResults, setSearchResults ] = useState([]);
+  const [ searchResults, setSearchResults ] = useState(searchData);
   const [ loading, setLoading ] = useState(false);
   const [ currentPage, setCurrentPage ] = useState(1);
   const [ hasNextPage, setHasNextPage ] = useState(false);
@@ -275,7 +275,8 @@ const SearchScreen = () => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.userContainer}
+    // check if the user is the last item in the list then styles.userContainer2
+      style={item.id === searchResults[searchResults.length - 1].id ? styles.userContainer2 : styles.userContainer}
       onPress={() => handleUserPress(item.id)}
       activeOpacity={0.7}
     >
@@ -442,6 +443,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#a0a0a0',
+  },
+  userContainer2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
   avatar: {
     width: 60,

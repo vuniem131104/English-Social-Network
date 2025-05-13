@@ -101,6 +101,7 @@ const Profile = () => {
       const response = await axios.get(`${baseUrl}/profile/posts/${userId}`, config);
       console.log('User posts:', response.data);
       if (Array.isArray(response.data)) {
+        response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setUserPosts(response.data);
       }
     } catch (error) {
@@ -255,8 +256,8 @@ const Profile = () => {
       return Math.floor(Math.random() * max);
     };
 
-    const repostCount = generateRandomCount(viewCount);
-    const shareCount = generateRandomCount(viewCount);
+    const repostCount = 1;
+    const shareCount = 1;
 
     return (
       <TouchableOpacity
@@ -572,9 +573,9 @@ const Profile = () => {
       <View style={[styles.customHeader, { backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.backButton, { backgroundColor: colors.primary }]}
+          style={[styles.backButton]}
         >
-          <Ionicons name="arrow-back" size={20} color="#fff" />
+          <Ionicons name="arrow-back" size={20} color="black" />
         </TouchableOpacity>
 
         <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
@@ -1064,7 +1065,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabContent: {
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   postsContainer: {
     paddingHorizontal: 12,

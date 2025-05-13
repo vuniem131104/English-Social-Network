@@ -48,7 +48,8 @@ const HomePage = () => {
         : {};
       const response = await axios.get(apiCall, config);
       if (Array.isArray(response.data)) {
-        setPosts(response.data);
+        // sort posts by createdAt in descending order with createdAt attribute
+        response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } else {
         console.error("Expected array but got:", typeof response.data);
         setPosts([]);

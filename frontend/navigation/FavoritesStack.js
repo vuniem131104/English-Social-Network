@@ -20,7 +20,24 @@ import { AuthContext } from "../context/authContext";
 import PostDetail from "../screens/Home/PostDetail";
 
 // Placeholder data for activity feed
-const activityData = [
+const activityData = [{
+    id: 156,
+    author: {
+      id: 2,
+      username: "username1",
+      name: "Bùi Hòa Minzy",
+      avatar: "https://picsum.photos/seed/avatar1/400/400"
+    },
+    title: "Đi xem concert idol: Cháy hết mình!!! 🔥🎤🎶",
+    description: "Hôm qua đi đu concert idol về mà giờ giọng vẫn còn khàn nè mấy má ơi! Quẩy banh nóc, hát khản cổ, la hét muốn tắt thở lun á. Nhưng mà zuiiiii xỉu! Cảm giác được ở gần idol, được nghe hát live nó phê gì đâu á. Worth it!",
+    mainImage: "https://picsum.photos/seed/post159/600/400",
+    totalView: 22,
+    totalComment: 5,
+    totalLike: 1,
+    steps: [],
+    createdAt: "2025-05-02T12:00:00.000Z",
+    updatedAt: "2025-05-12T07:05:45.000Z"
+  },
   {
     id: 25,
     author: {
@@ -44,24 +61,6 @@ const activityData = [
     ],
     createdAt: "2025-05-01T20:00:00.000Z",
     updatedAt: "2025-05-08T09:38:15.000Z"
-  },
-  {
-    id: 156,
-    author: {
-      id: 2,
-      username: "username1",
-      name: "Bùi Hòa Minzy",
-      avatar: "https://picsum.photos/seed/avatar1/400/400"
-    },
-    title: "Đi xem concert idol: Cháy hết mình!!! 🔥🎤🎶",
-    description: "Hôm qua đi đu concert idol về mà giờ giọng vẫn còn khàn nè mấy má ơi! Quẩy banh nóc, hát khản cổ, la hét muốn tắt thở lun á. Nhưng mà zuiiiii xỉu! Cảm giác được ở gần idol, được nghe hát live nó phê gì đâu á. Worth it!",
-    mainImage: "https://picsum.photos/seed/post159/600/400",
-    totalView: 22,
-    totalComment: 5,
-    totalLike: 1,
-    steps: [],
-    createdAt: "2025-05-02T12:00:00.000Z",
-    updatedAt: "2025-05-12T07:05:45.000Z"
   }
 ];
 
@@ -98,6 +97,7 @@ const FavoritesScreen = () => {
       const response = await axios.get(`${baseUrl}/profile/posts/${userId}`, config);
 
       if (Array.isArray(response.data)) {
+        response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setPosts(response.data);
       } else {
         console.error("Expected array but got:", typeof response.data);

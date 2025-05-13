@@ -170,9 +170,9 @@ const EditProfile = () => {
         <View style={[styles.customHeader, { backgroundColor: isDarkMode ? '#121212' : colors.surfaceContainer }]}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={[styles.backButton, { backgroundColor: colors.primary }]}
+            style={[styles.backButton]}
           >
-            <Ionicons name="arrow-back" size={20} color="#fff" />
+            <Ionicons name="arrow-back" size={20} color="black" />
           </TouchableOpacity>
 
           <Text style={[styles.headerTitle, { color: colors.onSurface }]}>
@@ -182,12 +182,12 @@ const EditProfile = () => {
           <TouchableOpacity
             onPress={handleSaveProfile}
             disabled={saving}
-            style={[styles.saveButton, { backgroundColor: colors.primary }]}
+            style={[styles.saveButton]}
           >
             {saving ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Feather name="check" size={20} color="#fff" />
+              <Feather name="check" size={20} color="black" />
             )}
           </TouchableOpacity>
         </View>
