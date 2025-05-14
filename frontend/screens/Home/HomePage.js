@@ -50,6 +50,7 @@ const HomePage = () => {
       if (Array.isArray(response.data)) {
         // sort posts by createdAt in descending order with createdAt attribute
         response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setPosts(response.data);
       } else {
         console.error("Expected array but got:", typeof response.data);
         setPosts([]);
