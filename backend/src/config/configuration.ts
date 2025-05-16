@@ -27,7 +27,7 @@ export default () => ({
     },
     },
     defaults: {
-    from: '"CookBook" <no-reply@example.com>',
+    from: '"EngNet" <no-reply@example.com>',
     }
   },
   });

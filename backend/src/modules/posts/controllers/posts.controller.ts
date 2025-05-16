@@ -51,10 +51,21 @@ import {
     @ApiResponse({ status: 200, description: 'Newsfeed' })
     @ApiResponse({ status: 404, description: 'Error' })
     async getNewsfeed(@Request() req, @Param('limit') limit: number) {
+      if(limit > 20) limit = 20;
       const result = await this.postsService.getNewsfeed(req.user.id, limit);
       return result;
     }
-
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Get('newsfeedf/:limit')
+    @ApiOperation({ summary: 'Lấy newsfeed following theo limit' })
+    @ApiResponse({ status: 200, description: 'NewsfeedF' })
+    @ApiResponse({ status: 404, description: 'Error' })
+    async getNewsfeedF(@Request() req, @Param('limit') limit: number) {
+      if(limit > 20) limit = 20;
+      const result = await this.postsService.getNewsfeedFollowing(req.user.id, limit);
+      return result;
+    }
 
 
 
@@ -154,6 +165,11 @@ import {
     @ApiResponse({ status: 404, description: 'Bài viết không tồn tại' })
     getCommentsWithLike(@Param('postId') postId: number, @Param('userId') userId: number, @Param('page') page: number) {
       return this.postsService.getComments(postId, userId, page);
+    }
+    @Get('comment/recount')
+    @ApiOperation({ summary: 'Đếm bình luận của bài viết' })
+    recountComment(){
+      return this.postsService.recountComment();
     }
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)

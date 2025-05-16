@@ -203,7 +203,17 @@ export class AuthController {
     return await this.authService.uploadImage(file.buffer);
   }
   
+  @Get('ai/taoBaiTap/:postId/:level')
+  @ApiOperation({ summary: 'Tạo bài tập bằng AI' })
+  async taoBaiTap(@Param('postId') postId: number, @Param('level') level: number) {
+    return this.authService.CreateExFromPost(postId, level);
+  }
 
+  @Get('ai/phanTichPost/:postId')
+  @ApiOperation({ summary: 'Phân tích bài viết bằng AI' })
+  async phanTichPost(@Param('postId') postId: number) {
+    return await this.authService.phanTichPost(postId);
+  }
   @Post('airecipe/uploadImage')
   @UseInterceptors(
     FileInterceptor('image', {

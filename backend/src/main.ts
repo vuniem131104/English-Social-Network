@@ -16,7 +16,7 @@ async function bootstrap() {
 
   // Global Interceptors
   app.useGlobalInterceptors(new LoggingInterceptor());
-
+  app.enableCors();
   // Swagger Setup
   const config = new DocumentBuilder()
     .setTitle('Recipe API')
@@ -33,4 +33,4 @@ async function bootstrap() {
   const appUrl = await app.getUrl();
   console.log(`Application is running on: ${appUrl}`);
 }
-bootstrap();
+bootstrap()

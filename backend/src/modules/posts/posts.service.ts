@@ -55,7 +55,7 @@ export class PostsService {
     await this.postsRepository.save(post);
     return { message: 'Tạo bài viết thành công.', post: new FullReponsePostDto(post) };
   }
-
+  
   async updatePost(postId: number, updatePostDto: UpdatePostDto, userId: number): Promise<any> {
     const post = await this.postsRepository.findOne({ where: { id: postId } });
     if (!post) {
@@ -153,6 +153,7 @@ export class PostsService {
     }
   }
   async likePost(postId: number, userId: number): Promise<any> {
+    const now = new Date();
     const post = await this.postsRepository
       .createQueryBuilder('post')
       .leftJoin('post.likes', 'likes')
@@ -160,7 +161,8 @@ export class PostsService {
       .select(['post', 'likes.id', 'author.id'])
       .where('post.id = :id', { id: postId })
       .getOne();
-    
+    const now2 = new Date();
+    console.log('Time taken to fetch post:', now2.getTime() - now.getTime(), 'ms');
     if (!post) {
       throw new NotFoundException('Bài viết không tồn tại.');
     }
@@ -366,9 +368,9 @@ export class PostsService {
         .select(['user.id', 'viewedPosts', 'following', 'followingUser.id'])
         .where('user.id = :userId', { userId })
         .getOne();
+      
       const followedUserIds = user.following.map(f => f.following.id);
       const viewedPostIds = user.viewedPosts.map(p => p.id);
-
       const query = this.postsRepository.createQueryBuilder('post')
         .leftJoinAndSelect('post.author', 'author');
 
@@ -378,9 +380,10 @@ export class PostsService {
         query.where('1=1');
       }
 
-      query.orWhere('post.authorId = :userId AND post.totalComment > 0', { userId });
+      
 
       const posts = await query.getMany();
+      //console.log(posts);
       // Get posts and calculate scores
       const scoredPosts = posts.map(post => {
         const isMine = (post.author.id==userId) ? 0 : 1;
@@ -398,12 +401,12 @@ export class PostsService {
     
       // Add new posts to viewed posts
       const newViewedPosts = topPosts
-        .filter(sp => sp.post.author.id !== userId) // Don't track own posts
-        .map(sp => sp.post);
+        .map(sp => sp.post)
+        .filter(post => !user.viewedPosts.some(viewedPost => viewedPost.id === post.id));
         
       if (newViewedPosts.length > 0) {
         user.viewedPosts.push(...newViewedPosts);
-        this.usersRepository.save(user);
+        await this.usersRepository.save(user);
       }
     
       return topPosts.map(sp => new LiteReponsePostDto(sp.post));
@@ -411,6 +414,71 @@ export class PostsService {
       console.log(error);
     }
   }
+
+  async getNewsfeedFollowing(userId: number, limit: number): Promise<any> {
+    try {
+      const user = await this.usersRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.viewedPosts', 'viewedPosts')
+        .leftJoinAndSelect('user.following', 'following')
+        .leftJoinAndSelect('following.following', 'followingUser')
+        .select(['user.id', 'viewedPosts', 'following', 'followingUser.id'])
+        .where('user.id = :userId', { userId })
+        .getOne();
+
+      const followedUserIds = user.following.map(f => f.following.id);
+      const viewedPostIds = user.viewedPosts.map(p => p.id);
+
+      // If the user is not following anyone, return an empty array
+      if (followedUserIds.length === 0) {
+        return [];
+      }
+
+      const query = this.postsRepository.createQueryBuilder('post')
+        .leftJoinAndSelect('post.author', 'author')
+        .where('author.id IN (:...followedUserIds)', { followedUserIds }); // Filter by followed users
+
+      if (viewedPostIds.length > 0) {
+        query.andWhere('post.id NOT IN (:...viewedPostIds)', { viewedPostIds }); // Exclude viewed posts
+      }
+
+      const posts = await query
+        .orderBy('post.createdAt', 'DESC') // Order by creation date, newest first
+        .take(limit) // Apply limit directly in the query
+        .getMany();
+
+      // Add new posts to viewed posts
+      const newViewedPosts = posts.filter(
+        post => !user.viewedPosts.some(viewedPost => viewedPost.id === post.id)
+      );
+
+      if (newViewedPosts.length > 0) {
+        user.viewedPosts.push(...newViewedPosts);
+        await this.usersRepository.save(user); // Use await here
+      }
+
+      return posts.map(post => new LiteReponsePostDto(post));
+    } catch (error) {
+      console.log(error);
+      // Consider throwing an error or returning a specific error response
+      throw new Error('Failed to fetch following newsfeed.');
+    }
+  }
+  async recountComment(): Promise<any> {
+    console.log('Recounting comments...');
+    const posts = await this.postsRepository.find({ relations: ['comments', 'likes'] });
+    for (const post of posts) {
+      console.log(`Post ID: ${post.id}, Comment Count: ${post.comments.length}`);
+      post.totalComment = post.comments.length;
+      post.totalLike = post.likes.length;
+      post.totalView = Math.floor(post.totalLike*1.1+post.totalComment*1.2 + Math.random()*30);
+    }
+    await this.postsRepository.save(posts);
+    return { message: 'Đã đếm lại số lượng bình luận cho tất cả bài viết.' };
+  }
+  
+
+
   async createComment(postId: number, createCommentDto: CreateCommentDto, userId: number): Promise<any> {
     const post = await this.postsRepository
       .createQueryBuilder('post')

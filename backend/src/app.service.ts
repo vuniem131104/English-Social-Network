@@ -8,7 +8,7 @@ export class AppService {
       <html lang="vi">
       <head>
         <meta charset="UTF-8">
-        <title>CookBook Backend</title> 
+        <title>EngNet Backend</title> 
         <style>
           body {
             background: linear-gradient(135deg, #1f1c2c, #928dab);

@@ -17,22 +17,22 @@ export class MailerService {
           <div style="font-family: 'Roboto', sans-serif; background-color: #f5f5f5; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
               <div style="padding: 20px; text-align: center; border-bottom: 1px solid #e0e0e0;">
-                <h1 style="color: #424242; margin: 0;">CookBook</h1>
+                <h1 style="color: #424242; margin: 0;">EngNet</h1>
                 <h2 style="color: #424242; margin: 10px 0 0 0;">Xác thực Email</h2>
               </div>
               <div style="padding: 20px;">
                 <p>Thân gửi <strong>${username}</strong>,</p>
-                <p>Chúng tôi rất vui mừng khi bạn đã đăng ký tài khoản tại <strong>CookBook</strong>. Để hoàn tất quá trình đăng ký và bảo mật tài khoản của bạn, vui lòng xác thực địa chỉ email của bạn bằng cách nhấp vào nút dưới đây:</p>
+                <p>Chúng tôi rất vui mừng khi bạn đã đăng ký tài khoản tại <strong>EngNet</strong>. Để hoàn tất quá trình đăng ký và bảo mật tài khoản của bạn, vui lòng xác thực địa chỉ email của bạn bằng cách nhấp vào nút dưới đây:</p>
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="${url}" style="background-color: #1976d2; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-size: 16px; display: inline-block;">
                     Xác thực Email
                   </a>
                 </div>
                 <p>Nếu bạn không đăng ký tài khoản với email này, vui lòng bỏ qua mail.</p>
-                <p>Trân trọng,<br/>CookBook - Admin</p>
+                <p>Trân trọng,<br/>EngNet - Admin</p>
               </div>
               <div style="padding: 20px; text-align: center; background-color: #f5f5f5; border-top: 1px solid #e0e0e0;">
-                <p style="font-size: 12px; color: #9e9e9e;">© 2024 CookBook. All rights reserved.</p>
+                <p style="font-size: 12px; color: #9e9e9e;">© 2024 EngNet. All rights reserved.</p>
               </div>
             </div>
           </div>
@@ -53,7 +53,7 @@ export class MailerService {
           <div style="font-family: 'Roboto', sans-serif; background-color: #f5f5f5; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
               <div style="padding: 20px; text-align: center; border-bottom: 1px solid #e0e0e0;">
-                <h1 style="color: #424242;">CookBook</h2>
+                <h1 style="color: #424242;">EngNet</h2>
                 <h2 style="color: #424242;">Đặt Lại Mật Khẩu</h2>
               </div>
               <div style="padding: 20px;">
@@ -64,10 +64,10 @@ export class MailerService {
                   <span style="font-size: 24px; color: #1976d2; font-weight: bold;">${code}</span>
                 </div>
                 <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-                <p>Trân trọng,<br/>CookBook - Admin</p>
+                <p>Trân trọng,<br/>EngNet - Admin</p>
               </div>
               <div style="padding: 20px; text-align: center; background-color: #f5f5f5; border-top: 1px solid #e0e0e0;">
-                <p style="font-size: 12px; color: #9e9e9e;">© 2024 CookBook. All rights reserved.</p>
+                <p style="font-size: 12px; color: #9e9e9e;">© 2024 EngNet. All rights reserved.</p>
               </div>
             </div>
           </div>

@@ -174,7 +174,6 @@ export class CreatePostDto {
   @IsUrl()
   @ApiPropertyOptional({ description: 'Hình ảnh', example: 'https://file.hstatic.net/200000610729/file/suon-3_022e54b9753f433ea8d5e2b7466b3484.jpg' })
   mainImage?: string;
-
 }
 
 

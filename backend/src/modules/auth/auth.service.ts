@@ -20,7 +20,34 @@ import { Readable } from 'stream';
 import * as fileType from 'file-type';
 import { randomInt } from 'crypto';
 import { GetRecipeDto } from './dtos/aichef.dto';
-import { get } from 'axios';
+import axios from 'axios'; // Import axios
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, SchemaType, Part  } from "@google/generative-ai"; // Import necessary types
+interface PostAnalysisSchema {
+  overview: string; // General overview of the post and image
+  isEnglishRelated: boolean; // Flag indicating if the post is about English learning
+  englishKnowledge?: { // Optional: Only if isEnglishRelated is true
+    topic: string; // Main topic (e.g., "Passive Voice", "Present Perfect")
+    details: string[]; // Detailed explanation, grammar rules, formulas
+    examples: string[]; // Example sentences
+  }[];
+  learningTips?: string[]; // Optional: Only if isEnglishRelated is true
+  wittyAnalysis?: string; // Optional: Only if isEnglishRelated is false
+}
+interface ExerciseSchema {
+  analysisSummary: string; // Brief summary of the English concepts found (or why none were found)
+  isEnglishRelated: boolean; // Whether the post is related to English learning
+  exercises: {
+    question: string; // The multiple-choice question
+    options: {
+      A: string;
+      B: string;
+      C: string;
+      D: string;
+    };
+    correctAnswer: 'A' | 'B' | 'C' | 'D'; // The correct option key
+    explanation: string; // Brief explanation why the answer is correct, referencing the post content if possible
+  }[];
+}
 
 @Injectable()
 export class AuthService {
@@ -129,7 +156,7 @@ export class AuthService {
               <p style="color: #555555; font-size: 16px; line-height: 1.6;">
                 Liên kết xác thực không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực hoặc liên hệ hỗ trợ.
               </p>
-              <footer style="margin-top: 40px; color: #888888; font-size: 14px;">&copy; 2024 CookBook. Tất cả các quyền được bảo lưu.</footer>
+              <footer style="margin-top: 40px; color: #888888; font-size: 14px;">&copy; 2024 EngNet. Tất cả các quyền được bảo lưu.</footer>
             </div>
           </body>
         </html>
@@ -157,10 +184,10 @@ export class AuthService {
               <strong>Email:</strong> ${user.email}
             </p>
             <p style="color: #555555; font-size: 16px; line-height: 1.6;">
-              Cảm ơn bạn đã xác thực email của mình. Bây giờ bạn có thể truy cập đầy đủ các tính năng của CookBook và bắt đầu khám phá những công thức nấu ăn tuyệt vời!
+              Cảm ơn bạn đã xác thực email của mình. Bây giờ bạn có thể truy cập đầy đủ các tính năng của EngNet và bắt đầu khám phá những công thức nấu ăn tuyệt vời!
             </p>
-            <a href="https://www.cookbook.com" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; margin-top: 30px;">Về Trang Chủ</a>
-            <footer style="margin-top: 40px; color: #888888; font-size: 14px;">&copy; 2024 CookBook. Tất cả các quyền được bảo lưu.</footer>
+            <a href="https://www.EngNet.com" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; margin-top: 30px;">Về Trang Chủ</a>
+            <footer style="margin-top: 40px; color: #888888; font-size: 14px;">&copy; 2024 EngNet. Tất cả các quyền được bảo lưu.</footer>
           </div>
         </body>
       </html>
@@ -432,6 +459,399 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to upload image');
     }
   }
+  // #############################
+  async urlToGenerativePart(url: string, mimeType: string): Promise<{ inlineData: { data: string; mimeType: string } }> {
+    try {
+      const response = await axios.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
+      const buffer = Buffer.from(response.data); // 'binary' encoding is deprecated for ArrayBuffer
+      return {
+        inlineData: {
+          data: buffer.toString('base64'),
+          mimeType,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching image from URL:", url, error);
+      throw new InternalServerErrorException('Failed to fetch image for analysis');
+    }
+  }
+
+  async CreateExFromPost(postId: number, level: number): Promise<any> {
+    try {
+      const postData = await this.postsRepository.findOne({
+        where: { id: postId },
+        // No need to load author for this specific task
+      });
+
+      if (!postData) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // Map level (1-6) to CEFR levels (A1-C2)
+      const cefrLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+      const targetLevel = cefrLevels[level - 1] || 'B1'; // Default to B1 if level is invalid
+
+      // It's highly recommended to store API keys in environment variables
+      const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCpO5z7jxHYM6JDa6eSQs8lx4atAjPWgVw"; // Use the provided key
+      const MODEL_NAME = "gemini-2.0-flash"; // Model supporting image and JSON output
+
+      const genAI = new GoogleGenerativeAI(API_KEY);
+
+      // Define the desired JSON output structure for Gemini
+      const exerciseResponseSchema = {
+        type: SchemaType.OBJECT,
+        properties: {
+          analysisSummary: {
+            type: SchemaType.STRING,
+            description: `Tóm tắt ngắn gọn về các khái niệm tiếng Anh được tìm thấy trong bài viết và hình ảnh, hoặc giải thích tại sao không thể tạo bài tập (ví dụ: nội dung không liên quan). Ngôn ngữ: Tiếng Việt.`,
+          },
+          isEnglishRelated: {
+            type: SchemaType.BOOLEAN,
+            description: "Xác định bài viết có liên quan trực tiếp đến việc học tiếng Anh hay không.",
+          },
+          exercises: {
+            type: SchemaType.ARRAY,
+            description: `Danh sách các câu hỏi trắc nghiệm (A, B, C, D) dựa trên nội dung tiếng Anh trong bài viết và hình ảnh, phù hợp với trình độ ${targetLevel}. Ngôn ngữ: Tiếng Anh cho câu hỏi và lựa chọn, Tiếng Việt cho giải thích.`,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                question: {
+                  type: SchemaType.STRING,
+                  description: "Câu hỏi trắc nghiệm bằng tiếng Việt, rõ ràng, ngắn gọn.",
+                },
+                options: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    A: { type: SchemaType.STRING, description: "Lựa chọn A (Tiếng Anh)" },
+                    B: { type: SchemaType.STRING, description: "Lựa chọn B (Tiếng Anh)" },
+                    C: { type: SchemaType.STRING, description: "Lựa chọn C (Tiếng Anh)" },
+                    D: { type: SchemaType.STRING, description: "Lựa chọn D (Tiếng Anh)" },
+                  },
+                  required: ["A", "B", "C", "D"],
+                },
+                correctAnswer: {
+                  type: SchemaType.STRING,
+                  enum: ["A", "B", "C", "D"],
+                  description: "Chữ cái (A, B, C, hoặc D) của đáp án đúng.",
+                },
+                explanation: {
+                    type: SchemaType.STRING,
+                    description: "Giải thích bằng tiếng Việt tại sao đáp án đó đúng, tại sao từng đáp án khác sai",
+                }
+              },
+              required: ["question", "options", "correctAnswer", "explanation"],
+            },
+          },
+        },
+        required: ["analysisSummary", "exercises", "isEnglishRelated"],
+      };
+
+
+      const model = genAI.getGenerativeModel({
+        model: MODEL_NAME,
+        safetySettings: [ // Standard safety settings
+           { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+           { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+           { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+           { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        ],
+        generationConfig: {
+          temperature: 0.1, // Lower temperature for more predictable exercises
+          topP: 0.45,
+          topK: 40,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json",
+          responseSchema: exerciseResponseSchema,
+        },
+      });
+
+      // Map numeric level (1-6) to descriptive difficulty
+      let targetLevelDesc: string;
+      if (level <= 2) {
+        targetLevelDesc = 'Easy';
+      } else if (level <= 4) {
+        targetLevelDesc = 'Medium';
+      } else {
+        targetLevelDesc = 'Hard';
+      }
+
+      const prompt = `
+        Bạn là một trợ lý AI chuyên nghiệp, bậc thầy trong việc tạo ra các bài tập tiếng Anh đa dạng và phù hợp với từng cấp độ từ nội dung mạng xã hội. Nhiệm vụ của bạn là phân tích sâu sắc một bài viết (tiêu đề, mô tả, nội dung chi tiết) và hình ảnh đi kèm (nếu có) để xây dựng các câu hỏi trắc nghiệm chất lượng cao, kiểm tra nhiều kỹ năng khác nhau cho người học tiếng Anh.
+
+        Phân tích bài viết sau:
+
+           ID Bài viết: ${postData.id}
+           Tiêu đề: ${postData.title || 'Không có'}
+           Mô tả: ${postData.description || 'Không có'}
+           Các bước/Nội dung chi tiết: ${postData.steps ? postData.steps.join('\n') : 'Không có'}
+           URL Hình ảnh: ${postData.mainImage || 'Không có hình ảnh'}
+
+        Yêu cầu:
+
+        1.  Phân tích Chuyên sâu: Đọc hiểu văn bản VÀ phân tích hình ảnh (nếu có) một cách kỹ lưỡng. Xác định không chỉ từ vựng/ngữ pháp rõ ràng mà còn cả các cấu trúc ẩn ý, sắc thái nghĩa, cách diễn đạt tự nhiên, và kiến thức văn hóa (nếu có) liên quan đến tiếng Anh.
+        2.  Đánh giá Mức độ liên quan: Nội dung có trực tiếp dạy, minh họa, hoặc cung cấp ngữ cảnh thực tế cho việc học tiếng Anh không?
+        3.  Tạo Bài tập Đa dạng (Nếu liên quan):
+           Dựa trên phân tích, tạo ra 4 câu hỏi trắc nghiệm (A, B, C, D). Câu hỏi bằng tiếng Việt, đáp án bằng tiếng Anh.
+           Đa dạng hóa loại câu hỏi: Kết hợp nhiều dạng để kiểm tra toàn diện, mỗi loại câu hỏi lấy 1:
+               Từ vựng: Nghĩa của từ/cụm từ trong ngữ cảnh, từ đồng nghĩa/trái nghĩa, collocations (kết hợp từ), phrasal verbs, idioms (thành ngữ).
+               Ngữ pháp: Chọn cấu trúc đúng, sửa lỗi sai, sử dụng thì/dạng phù hợp, cấu trúc câu phức tạp (mệnh đề, câu điều kiện, bị động...).
+               Đọc hiểu: Tìm ý chính, chi tiết cụ thể, suy luận (inference), hiểu thái độ/mục đích của tác giả, liên kết thông tin giữa văn bản và hình ảnh.
+               Điền vào chỗ trống (Gap-fill): Chọn từ/cụm từ phù hợp nhất để hoàn thành câu.
+               Ứng dụng thực tế (Situational): Đưa ra một tình huống ngắn gọn liên quan đến chủ đề bài viết, yêu cầu chọn cách diễn đạt/phản hồi bằng tiếng Anh phù hợp nhất, thể hiện sự hiểu biết về kiến thức đã học.
+           Phân hóa Độ khó Rõ rệt (${targetLevelDesc}): Điều chỉnh độ phức tạp của câu hỏi, từ vựng, cấu trúc ngữ pháp, và các phương án gây nhiễu (distractors) một cách tinh vi cho từng cấp độ:
+
+               Easy:
+               Trọng tâm: Nhận biết từ vựng cơ bản, cấu trúc câu đơn giản (S-V-O), thì hiện tại đơn/tiếp diễn, quá khứ đơn cơ bản. Tìm thông tin trực tiếp, rõ ràng trong bài.
+               Câu hỏi: Chủ yếu là "Cái gì?", "Ở đâu?", "Ai?", chọn từ đúng nghĩa đen, hoàn thành câu rất đơn giản.
+               Ví dụ loại câu hỏi: Chọn nghĩa đúng của một từ rất phổ biến trong bài; Điền một giới từ cơ bản vào chỗ trống; Tìm một chi tiết được nêu rõ trong 1-2 câu đầu.
+               Phương án nhiễu: Rất khác biệt, dễ loại trừ (sai nghĩa hoàn toàn, sai ngữ pháp cơ bản).
+
+               Medium:
+               Trọng tâm: Hiểu ý chính, suy luận đơn giản, từ vựng phổ biến và một số collocations/phrasal verbs thông dụng, các thì phức tạp hơn (hiện tại hoàn thành, quá khứ tiếp diễn), câu điều kiện loại 1 & 2, bị động cơ bản, mệnh đề quan hệ đơn giản.
+               Câu hỏi: Yêu cầu hiểu hàm ý cơ bản, tóm tắt ý, áp dụng quy tắc ngữ pháp vào ngữ cảnh tương tự, phân biệt từ gần nghĩa thông dụng, chọn câu trả lời phù hợp trong một tình huống đơn giản.
+               Ví dụ loại câu hỏi: Từ nào đồng nghĩa với X trong đoạn văn?; Tại sao tác giả đề cập đến Y?; Chọn thì đúng cho động từ trong câu Z; Nếu bạn ở trong tình huống mô tả, bạn sẽ nói gì (chọn câu đơn giản, trực tiếp)?
+               Phương án nhiễu: Có vẻ hợp lý về chủ đề nhưng sai về chi tiết, ngữ pháp, hoặc sắc thái nghĩa trong ngữ cảnh câu hỏi.
+
+               Hard:
+               Trọng tâm: Phân tích sâu, suy luận phức tạp, hiểu ẩn ý/thái độ/mục đích, từ vựng nâng cao/học thuật/chuyên ngành (nếu có), idioms, phrasal verbs phức tạp, cấu trúc ngữ pháp tinh vi (đảo ngữ, câu chẻ, điều kiện hỗn hợp/loại 3, mệnh đề phân từ, bị động nâng cao), từ vựng thật khó, hiếm gặp, bắt buộc có hành ngữ,...
+               Câu hỏi: Yêu cầu phân tích dụng ý tác giả, đánh giá thông tin, tổng hợp ý từ nhiều nguồn (văn bản + hình ảnh), hiểu sắc thái nghĩa tinh tế, áp dụng kiến thức vào tình huống phức tạp hoặc trừu tượng, chọn cách diễn đạt tự nhiên và phù hợp nhất về văn phong.
+               Ví dụ loại câu hỏi: Thái độ của tác giả đối với vấn đề X là gì?; Hàm ý chính của hình ảnh khi kết hợp với đoạn văn là gì?; Chọn cấu trúc ngữ pháp nâng cao (vd: đảo ngữ) phù hợp nhất để diễn đạt lại ý Y; Trong tình huống Z phức tạp, cách phản hồi nào thể hiện sự tinh tế/lịch sự/chuyên nghiệp nhất (chọn câu phức tạp, có sắc thái)?
+               Phương án nhiễu: Rất tinh vi, dễ gây nhầm lẫn, kiểm tra sự khác biệt nhỏ về nghĩa/cách dùng, các lỗi sai phổ biến ở trình độ cao, hoặc các lựa chọn đúng một phần nhưng không phải là tốt nhất.
+
+           Ngôn ngữ: Câu hỏi (tiếng Việt) và các lựa chọn A, B, C, D (tiếng Anh).
+           Đáp án & Giải thích Chi tiết: Cung cấp đáp án đúng (chữ cái A/B/C/D) và giải thích bằng Tiếng Việt cực kỳ rõ ràng, logic. Phải chỉ rõ:
+               Tại sao đáp án đúng (dựa vào đâu trong bài/hình ảnh? quy tắc ngữ pháp/từ vựng nào? logic suy luận?).
+               Tại sao từng phương án sai lại không chính xác (sai ở điểm nào: ngữ pháp, từ vựng, logic, không liên quan, không phù hợp ngữ cảnh/văn phong?).
+        4.  Trường hợp Không liên quan: Nếu nội dung không đủ chất lượng hoặc không liên quan đến tiếng Anh để tạo bài tập ý nghĩa ở cấp độ yêu cầu, giải thích rõ lý do trong 'analysisSummary' và để trống 'exercises'.
+        5.  Định dạng Output: TUYỆT ĐỐI CHÍNH XÁC trả về kết quả dạng JSON theo 'responseSchema'. Đảm bảo mọi trường bắt buộc đều có mặt, đúng kiểu dữ liệu, và nội dung logic.
+
+        Hãy vận dụng sự sáng tạo và kiến thức chuyên sâu về ngôn ngữ để tạo ra những bài tập thực sự thử thách và hữu ích, phản ánh chính xác độ khó yêu cầu (${targetLevelDesc}).
+        `;
+
+      const chatSession = model.startChat({
+        history: [],
+        // generationConfig is already set in getGenerativeModel
+      });
+
+      const parts: Part[] = [{ text: prompt }]; // Initialize parts with the text prompt
+
+      // Fetch image data if URL exists and add it to the parts
+      if (postData.mainImage) {
+        try {
+          // Basic MIME type detection based on common extensions
+          let imageMimeType = 'image/jpeg'; // Default
+          const extension = postData.mainImage.split('.').pop()?.toLowerCase();
+          if (extension === 'png') {
+            imageMimeType = 'image/png';
+          } else if (extension === 'gif') {
+            imageMimeType = 'image/gif';
+          } else if (extension === 'webp') {
+            imageMimeType = 'image/webp';
+          }
+          // Add more types if needed
+
+          const imagePart = await this.urlToGenerativePart(postData.mainImage, imageMimeType);
+          parts.push(imagePart); // Add the image part
+        } catch (imageError) {
+          console.warn(`Could not fetch or process image for post ${postId}: ${imageError.message}. Proceeding without image.`);
+          // Optionally add a note to the prompt that the image couldn't be processed
+          // parts[0].text += "\n\nLưu ý: Không thể tải hoặc xử lý hình ảnh được cung cấp.";
+        }
+      }
+
+      const result = await chatSession.sendMessage(parts);
+      const responseText = result.response.text();
+
+      // Log the raw response for debugging
+      // console.log("Raw Gemini Response for Exercise Generation:", responseText);
+
+      try {
+        // Gemini should return valid JSON because of responseSchema
+        const parsedData: ExerciseSchema = JSON.parse(responseText);
+        return parsedData;
+      } catch (parseError) {
+        console.error("Failed to parse Gemini JSON response for exercises:", parseError);
+        console.error("Raw response was:", responseText);
+        throw new InternalServerErrorException('Failed to parse AI exercise generation response');
+      }
+
+    } catch (error) {
+      console.error("Error during exercise generation:", error);
+      if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      // Log the specific Gemini API error if available
+      if (error.response && error.response.data) {
+          console.error("Gemini API Error:", error.response.data);
+      } else if (error.message) {
+          console.error("Gemini SDK/Request Error:", error.message);
+      }
+      throw new InternalServerErrorException('Failed to generate exercises with AI');
+    }
+  }
+  async phanTichPost(postID: number): Promise<any> {
+    try {
+      const postData = await this.postsRepository.findOne({
+         where: { id: postID },
+         relations: ['author'] // Ensure author is loaded if needed later, though not directly used in prompt
+        });
+
+      if (!postData) {
+        throw new NotFoundException('Post not found');
+      }
+
+      // It's highly recommended to store API keys in environment variables
+      const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCpO5z7jxHYM6JDa6eSQs8lx4atAjPWgVw";
+      const MODEL_NAME = "gemini-2.0-flash"; // Use gemini-1.5-flash as it supports image input
+
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const model = genAI.getGenerativeModel({
+         model: MODEL_NAME,
+         // Safety settings can be adjusted as needed
+         safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+         ],
+        });
+
+      const generationConfig = {
+        temperature: 0, // Adjust temperature for creativity vs. factuality
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192, // Adjust as needed
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            overview: {
+              type: SchemaType.STRING,
+              description: "Tóm tắt chung về nội dung bài viết và hình ảnh (nếu có).",
+            },
+            isEnglishRelated: {
+              type: SchemaType.BOOLEAN,
+              description: "Xác định bài viết có liên quan trực tiếp đến việc học tiếng Anh hay không.",
+            },
+            englishKnowledge: {
+              type: SchemaType.ARRAY,
+              description: "Chỉ bao gồm nếu isEnglishRelated là true. Chi tiết về các điểm kiến thức tiếng Anh.",
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  topic: {
+                    type: SchemaType.STRING,
+                    description: "Chủ đề ngữ pháp hoặc từ vựng chính (ví dụ: 'Passive Voice', 'Present Perfect', 'Vocabulary: Travel').",
+                  },
+                  details: {
+                    type: SchemaType.ARRAY,
+                    description: "Giải thích chi tiết, quy tắc ngữ pháp, công thức liên quan đến chủ đề.",
+                    items: { type: SchemaType.STRING },
+                  },
+                  examples: {
+                    type: SchemaType.ARRAY,
+                    description: "Các câu ví dụ minh họa cho chủ đề.",
+                    items: { type: SchemaType.STRING },
+                  },
+                },
+                required: ["topic", "details", "examples"],
+              },
+            },
+            learningTips: {
+              type: SchemaType.ARRAY,
+              description: "Chỉ bao gồm nếu isEnglishRelated là true. Các mẹo học tập, ghi nhớ liên quan đến kiến thức trong bài.",
+              items: { type: SchemaType.STRING },
+            },
+            wittyAnalysis: {
+              type: SchemaType.STRING,
+              description: "Chỉ bao gồm nếu isEnglishRelated là false. Một phân tích ngắn gọn, hài hước, hoặc lém lỉnh về nội dung bài viết và hình ảnh.",
+            },
+          },
+          required: ["overview", "isEnglishRelated"],
+        },
+      };
+
+      const prompt = `
+Bạn là một trợ lý AI phân tích nội dung mạng xã hội cho người học tiếng Anh. Nhiệm vụ của bạn là phân tích bài viết và hình ảnh đi kèm (nếu có) để cung cấp thông tin hữu ích cho người dùng.
+
+Phân tích bài viết sau:
+
+   Tiêu đề: ${postData.title}
+   Mô tả: ${postData.description}
+   Các bước/Nội dung chi tiết: ${postData.steps ? postData.steps.join('\n') : 'Không có'}
+   URL Hình ảnh: ${postData.mainImage || 'Không có hình ảnh'}
+
+Yêu cầu:
+
+1.  Đọc và hiểu nội dung văn bản (tiêu đề, mô tả, các bước) VÀ phân tích hình ảnh từ URL được cung cấp.
+2.  Đánh giá tổng quan: Cung cấp một cái nhìn chung về chủ đề của bài viết và hình ảnh.
+3.  Xác định tính liên quan đến tiếng Anh: Quyết định xem nội dung chính có phải về dạy/học tiếng Anh không (ngữ pháp, từ vựng, kỹ năng, mẹo học...).
+4.  Nếu liên quan đến tiếng Anh:
+       Trích xuất các chủ đề kiến thức chính (ví dụ: "Câu bị động", "Từ vựng chủ đề du lịch").
+       Với mỗi chủ đề, cung cấp giải thích chi tiết hơn, làm rõ các quy tắc, công thức được đề cập hoặc ẩn ý. Đảm bảo tính chính xác về ngữ pháp.
+       Cung cấp thêm các ví dụ minh họa rõ ràng.
+       Đề xuất các mẹo phải đi sâu, cụ thể vào kiến thức đó, không viết chung chung.
+5.  Nếu KHÔNG liên quan đến tiếng Anh:
+       Cung cấp một phân tích dí dỏm, hài hước, hoặc thú vị về nội dung bài viết và hình ảnh. Giữ thái độ tích cực và vui vẻ.
+6.  Luôn trả về kết quả dưới dạng JSON theo đúng cấu trúc đã định nghĩa trong responseSchema. Đảm bảo tất cả các trường bắt buộc đều có mặt.
+
+Hãy phân tích cẩn thận cả văn bản và hình ảnh để đưa ra kết quả chính xác và hữu ích nhất bằng tiếng Việt.
+`;
+
+      const chatSession = model.startChat({
+        generationConfig,
+        history: [
+        ],
+      });
+
+      const parts: any[] = [prompt];
+
+      // Fetch image data if URL exists and add it to the parts
+      if (postData.mainImage) {
+        // Assuming JPEG, adjust mime type if necessary (e.g., 'image/png')
+        // You might need a more robust way to determine mime type if URLs vary
+        const imageMimeType = 'image/jpeg'; // Or determine dynamically if possible
+        const imagePart = await this.urlToGenerativePart(postData.mainImage, imageMimeType);
+        parts.push(imagePart);
+      }
+
+
+      const result = await chatSession.sendMessage(parts);
+      const responseText = result.response.text();
+
+      // Log the raw response for debugging
+      // console.log("Raw Gemini Response:", responseText);
+
+      try {
+        const parsedData: PostAnalysisSchema = JSON.parse(responseText);
+        return parsedData;
+      } catch (parseError) {
+        console.error("Failed to parse Gemini JSON response:", parseError);
+        console.error("Raw response was:", responseText);
+        throw new InternalServerErrorException('Failed to parse AI analysis response');
+      }
+
+    } catch (error) {
+      console.error("Error during post analysis:", error);
+      if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      // Log the specific Gemini API error if available
+      if (error.response && error.response.data) {
+          console.error("Gemini API Error:", error.response.data);
+      } else if (error.message) {
+          console.error("Gemini SDK/Request Error:", error.message);
+      }
+      throw new InternalServerErrorException('Failed to analyze post with AI');
+    }
+  }
+
+
+
+
+
+
+
   async sendImageToAI(buffer: Buffer): Promise<any> {
     try{
       const { GoogleGenerativeAI } = require("@google/generative-ai");
